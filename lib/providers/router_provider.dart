@@ -14,6 +14,8 @@ import 'package:tiefprompt/ui/screens/settings/keybindings_settings_screen.dart'
 import 'package:tiefprompt/ui/screens/settings/settings_restore_screen.dart';
 import 'package:tiefprompt/ui/screens/settings/settings_screen.dart';
 import 'package:tiefprompt/ui/screens/settings/text_settings_screen.dart';
+import 'package:tiefprompt/ui/screens/speech_debug_screen.dart';
+import 'package:tiefprompt/ui/widgets/karaoke_text.dart';
 import 'package:tiefprompt/ui/widgets/prompter_theme_scope.dart';
 
 part 'router_provider.g.dart';
@@ -79,6 +81,11 @@ class TiefPromptRouter extends _$TiefPromptRouter {
           path: '/helprequest',
           builder: (context, state) => const HelpRequestScreen(),
         ),
+        if (kKaraokeDebugMode)
+          GoRoute(
+            path: '/speech_debug',
+            builder: (context, state) => const SpeechDebugScreen(),
+          ),
       ],
     );
   }

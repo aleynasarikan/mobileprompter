@@ -4,6 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tief_weave/markdown.dart';
 import 'package:tiefprompt/providers/current_chapter_provider.dart';
 import 'package:tiefprompt/providers/prompter_provider.dart';
+import 'package:tiefprompt/providers/speech_recognition_provider.dart';
+import 'package:tiefprompt/services/karaoke_matcher.dart';
+import 'package:tiefprompt/services/karaoke_speech_follower.dart';
+import 'package:tiefprompt/services/speech_recognition_service.dart';
+import 'package:tiefprompt/ui/widgets/karaoke_text.dart';
 
 class _UserScrolling extends Notifier<bool> {
   @override
@@ -18,22 +23,34 @@ final _userScrollingProvider = NotifierProvider<_UserScrolling, bool>(
 
 class ScrollableTextController {
   final ScrollController scrollController;
+  final KaraokeController karaokeController = KaraokeController();
 
   ScrollableTextController({double initialScrollOffset = 0.0})
     : scrollController = ScrollController(
         initialScrollOffset: initialScrollOffset,
       );
 
+  /// Manual jump; the reading position follows (see
+  /// [KaraokeController.seekToReadingLine]).
   void jumpTo(double offset) {
     scrollController.jumpTo(offset);
+    _seekAfterLayout();
   }
 
   void jumpRelative(double offset) {
     scrollController.jumpTo(scrollController.offset + offset);
+    _seekAfterLayout();
+  }
+
+  void _seekAfterLayout() {
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => karaokeController.seekToReadingLine(),
+    );
   }
 
   void dispose() {
     scrollController.dispose();
+    karaokeController.dispose();
   }
 }
 
@@ -67,6 +84,8 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
       MarkdownRendererController();
   List<({String title, double offset})> _chapterOffsets = [];
   double _topPadding = 0;
+  KaraokeSpeechFollower? _speechFollower;
+  bool _userDragging = false;
 
   void _startScrolling(double speed) {
     _stopScrolling();
@@ -93,6 +112,13 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
 
     _rebuildAst();
 
+    if (kKaraokeDebugMode) {
+      _speechFollower = KaraokeSpeechFollower(
+        controller: widget.controller.karaokeController,
+        events: ref.read(speechRecognitionServiceProvider).events,
+      );
+    }
+
     _markdownController.addListener(_recomputeChapterOffsets);
     widget.controller.scrollController.addListener(_updateCurrentChapter);
   }
@@ -115,7 +141,7 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
     _chapterOffsets = [
       for (var i = 0; i < blocks.length; i++)
         if (blocks[i] case final Heading heading)
-          if (_markdownController.offsetOf(i) case final double offset)
+          if (_blockOffset(i) case final double offset)
             (
               title: _inlinesToText(heading.inlines),
               offset: offset + _topPadding,
@@ -123,6 +149,10 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
     ];
     _updateCurrentChapter();
   }
+
+  double? _blockOffset(int blockIndex) => kKaraokeDebugMode
+      ? widget.controller.karaokeController.blockOffset(blockIndex)
+      : _markdownController.offsetOf(blockIndex);
 
   String _inlinesToText(List<Inline> inlines) {
     return inlines
@@ -241,14 +271,26 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
       });
     }
 
-    return NotificationListener<ScrollNotification>(
+    final scrollView = NotificationListener<ScrollNotification>(
       onNotification: (notification) {
         if (notification is ScrollStartNotification &&
             notification.dragDetails != null) {
+          _userDragging = true;
+          widget.controller.karaokeController.isUserScrolling = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             ref.read(_userScrollingProvider.notifier).setValue(true);
           });
         } else if (notification is ScrollEndNotification) {
+          // Also reached after the fling that follows a drag.
+          if (_userDragging) {
+            _userDragging = false;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              final karaoke = widget.controller.karaokeController;
+              karaoke.isUserScrolling = false;
+              karaoke.seekToReadingLine();
+            });
+          }
           WidgetsBinding.instance.addPostFrameCallback((_) {
             ref.read(_userScrollingProvider.notifier).setValue(false);
           });
@@ -268,7 +310,17 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
           ),
           child: Column(
             children: [
-              if (markdownEnabled)
+              if (kKaraokeDebugMode)
+                KaraokeText(
+                  text: widget.text,
+                  markdownAst: markdownEnabled ? _ast : null,
+                  controller: widget.controller.karaokeController,
+                  textAlign: alignment,
+                  style: widget.style,
+                  width: renderWidth,
+                  onLayout: _recomputeChapterOffsets,
+                )
+              else if (markdownEnabled)
                 Markdown(
                   widget.text,
                   controller: _markdownController,
@@ -287,6 +339,46 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
         ),
       ),
     );
+
+    if (!kKaraokeDebugMode) return scrollView;
+
+    ref.listen(speechRecognitionProvider.select((s) => s.isActive), (
+      _,
+      active,
+    ) {
+      widget.controller.karaokeController.speechMode = active;
+      if (active) _speechFollower?.reset();
+    });
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        scrollView,
+        Positioned(
+          top: 0,
+          bottom: 0,
+          right: 0,
+          child: Center(
+            child: KaraokeDebugPanel(
+              controller: widget.controller.karaokeController,
+              onToggleSpeech: () =>
+                  ref.read(speechRecognitionProvider.notifier).toggle(),
+            ),
+          ),
+        ),
+        if (_speechFollower case final follower?)
+          Positioned(
+            top: 8,
+            left: 8,
+            child: IgnorePointer(
+              child: _SpeechFollowDebugInfo(
+                follower: follower,
+                controller: widget.controller.karaokeController,
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   @override
@@ -297,6 +389,59 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
     widget.controller.scrollController.removeListener(_updateCurrentChapter);
     _markdownController.removeListener(_recomputeChapterOffsets);
     _markdownController.dispose();
+    _speechFollower?.dispose();
     super.dispose();
+  }
+}
+
+class _SpeechFollowDebugInfo extends StatelessWidget {
+  final KaraokeSpeechFollower follower;
+  final KaraokeController controller;
+
+  const _SpeechFollowDebugInfo({
+    required this.follower,
+    required this.controller,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: Listenable.merge([follower, controller]),
+      builder: (context, _) {
+        if (!controller.speechMode) return const SizedBox.shrink();
+        final active = controller.activeWordIndex;
+        final words = controller.document.words;
+        final result = follower.lastResult;
+        final match = result?.match ?? KaraokeMatch.none;
+        final lines = [
+          'STT mode · active #$active '
+              '"${active >= 0 && active < words.length ? words[active] : '-'}"',
+          'method: ${match.method.name} · '
+              'confidence: ${match.confidence.toStringAsFixed(2)} · '
+              '${result?.decision.name ?? '-'}',
+          'matched: ${match.matchedText.isEmpty ? '-' : match.matchedText}',
+          'partial: ${follower.lastPartial.isEmpty ? '-' : follower.lastPartial}',
+          'final: ${follower.lastFinal.isEmpty ? '-' : follower.lastFinal}',
+        ];
+        return ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Text(
+                lines.join('\n'),
+                maxLines: 8,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white, fontSize: 11),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }
