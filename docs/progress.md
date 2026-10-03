@@ -74,6 +74,14 @@ konuşma tanıma → metinle eşleştirme → otomatik ilerleme + karaoke vurgu,
 - Testler: gecikmiş eski partial/final, seek sonrası aynı final, gerçek drag/seek, seek sırasında açık utterance, seek sırasında açık utterance yokken yeni speech, ilgili karaoke testleri.
 - Sonuç: 54/54 test geçti.
 
+### Aşama 5 — Portrait karaoke yerleşimi (kod)
+- Yalnızca dikey ekran. Yatay yerleşim (SafeArea, üst/alt bar, debug panelin metnin üstünde durması) aynı kaldı.
+- Metin alanı üst ve alt barların arasında; barlar metnin üzerine binmez. Üst bar gövdesi 48 px (durum çubuğu hariç), daha küçük kapatma düğmesi ve 16 punto başlık.
+- Karaoke/debug şeridi sağda ayrı bir kolonda (64 px); metin ile arasında 12 px boşluk var. Şerit kaldırılmadı. STT debug kutusu, konuşma modu açıkken metnin üstünde yer kaplar, kelimelerin üstüne binmez.
+- Portrait yatay boşluk en az 20 px (kullanıcının kenar payı daha büyükse o kalır). Kayıtlı yazı boyutu değişmez; dikeyde ekranda 2/3'ü çizilir (varsayılan 42 → 28). +/- hâlâ kayıtlı değeri değiştirir.
+- Karaoke eşleştirme, speech follower, STT ve aktif kelime takibi değişmedi.
+- `flutter test`: 54/54 geçti.
+
 ## Sıradaki adımlar
 1. Aşama 4 cihaz testi: STT açıkken elle geri/ileri sar, başa al, panel düğmeleri; takip yeni konumdan devam etmeli.
 2. STT oturum sürekliliği v2 (bip/1–2 sn duraksama): yukarıdaki öneri; önce logcat ile final sonrası partial'ların yalnızca yeni cümleyi içerdiğini doğrula.

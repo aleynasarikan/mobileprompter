@@ -10,6 +10,7 @@ import 'package:tiefprompt/core/fonts.dart';
 import 'package:tiefprompt/providers/combining_provider.dart';
 import 'package:tiefprompt/providers/feature_provider.dart';
 import 'package:tiefprompt/providers/fonts_provider.dart';
+import 'package:tiefprompt/providers/prompter_config.dart';
 import 'package:tiefprompt/providers/prompter_provider.dart';
 import 'package:tiefprompt/providers/settings_provider.dart';
 import 'package:tiefprompt/providers/theme_provider.dart';
@@ -29,6 +30,9 @@ final fontSettingsVisibleProvider = NotifierProvider<_BoolToggle, bool>(
 final displaySettingsVisibleProvider = NotifierProvider<_BoolToggle, bool>(
   () => _BoolToggle(false),
 );
+
+/// Height of the portrait bottom bar above the system navigation inset.
+const double kPortraitBottomBarBodyHeight = 48;
 
 class PrompterBottomBar extends ConsumerWidget {
   const PrompterBottomBar({super.key});
@@ -129,6 +133,13 @@ class PrompterBottomBar extends ConsumerWidget {
     );
     final fontSettingsVisible = ref.watch(fontSettingsVisibleProvider);
     final displaySettingsVisible = ref.watch(displaySettingsVisibleProvider);
+    final displayedFontSize = prompterDisplayFontSize(
+      fontSize,
+      MediaQuery.orientationOf(context),
+    );
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final portrait =
+        MediaQuery.orientationOf(context) == Orientation.portrait;
 
     return Stack(
       children: [
@@ -136,66 +147,129 @@ class PrompterBottomBar extends ConsumerWidget {
           bottom: 0,
           left: 0,
           right: 0,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.onSurface.withAlpha(120),
-            ),
-            padding: const EdgeInsets.symmetric(
-              vertical: 12.0,
-              horizontal: 16.0,
-            ),
-            child: SafeArea(
-              top: false,
-              child: Stack(
-                children: [
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    child: IconTheme.merge(
-                      data: IconThemeData(
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.max,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: _getWidgetButtons(context, ref),
-                      ),
-                    ),
+          child: portrait
+              ? _portraitChrome(
+                  context,
+                  ref,
+                  speed: speed,
+                  displayedFontSize: displayedFontSize,
+                  onSurface: onSurface,
+                )
+              : Container(
+                  decoration: BoxDecoration(color: onSurface.withAlpha(120)),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12.0,
+                    horizontal: 16.0,
                   ),
-                  Positioned(
-                    right: 0,
-                    child: Column(
+                  child: SafeArea(
+                    top: false,
+                    child: Stack(
                       children: [
-                        Text(
-                          context.tr(
-                            "PrompterScreen.speed",
-                            args: [speed.toStringAsFixed(1)],
-                          ),
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                        Text(
-                          context.tr(
-                            "PrompterScreen.fontsize",
-                            args: [fontSize.toStringAsFixed(1)],
-                          ),
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
+                        _controlsRow(context, ref, compact: false),
+                        Positioned(
+                          right: 0,
+                          child: Column(
+                            children: [
+                              Text(
+                                context.tr(
+                                  "PrompterScreen.speed",
+                                  args: [speed.toStringAsFixed(1)],
+                                ),
+                                style: TextStyle(color: onSurface),
+                              ),
+                              Text(
+                                context.tr(
+                                  "PrompterScreen.fontsize",
+                                  args: [displayedFontSize.toStringAsFixed(1)],
+                                ),
+                                style: TextStyle(color: onSurface),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
+                ),
         ),
         if (fontSettingsVisible) SafeArea(child: _FontSettingsDialog()),
         if (displaySettingsVisible) SafeArea(child: _DisplaySettingsDialog()),
       ],
+    );
+  }
+
+  Widget _portraitChrome(
+    BuildContext context,
+    WidgetRef ref, {
+    required double speed,
+    required double displayedFontSize,
+    required Color onSurface,
+  }) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    return Container(
+      height: bottomInset + kPortraitBottomBarBodyHeight,
+      clipBehavior: Clip.hardEdge,
+      decoration: BoxDecoration(color: onSurface.withAlpha(120)),
+      padding: EdgeInsets.only(left: 4, right: 8, bottom: bottomInset),
+      child: Row(
+        children: [
+          Expanded(child: _controlsRow(context, ref, compact: true)),
+          const SizedBox(width: 8),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                context.tr(
+                  "PrompterScreen.speed",
+                  args: [speed.toStringAsFixed(1)],
+                ),
+                style: TextStyle(color: onSurface, fontSize: 11),
+              ),
+              Text(
+                context.tr(
+                  "PrompterScreen.fontsize",
+                  args: [displayedFontSize.toStringAsFixed(1)],
+                ),
+                style: TextStyle(color: onSurface, fontSize: 11),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _controlsRow(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool compact,
+  }) {
+    final row = IconTheme.merge(
+      data: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
+      child: Row(
+        mainAxisSize: MainAxisSize.max,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: _getWidgetButtons(context, ref),
+      ),
+    );
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: compact
+          ? IconButtonTheme(
+              data: IconButtonThemeData(
+                style: IconButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(40, 40),
+                  fixedSize: const Size(40, 40),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+              child: row,
+            )
+          : row,
     );
   }
 }
@@ -266,7 +340,12 @@ class _FontSettingsDialog extends ConsumerWidget {
                         Text(
                           context.tr(
                             "PrompterScreen.SimpleDialog_TextFormat.fontsize",
-                            args: [fontSize.toStringAsFixed(1)],
+                            args: [
+                              prompterDisplayFontSize(
+                                fontSize,
+                                MediaQuery.orientationOf(context),
+                              ).toStringAsFixed(1),
+                            ],
                           ),
                         ),
                         IconButton(

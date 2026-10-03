@@ -8,6 +8,7 @@ import 'package:tiefprompt/core/debouncer.dart';
 import 'package:tiefprompt/models/keybinding.dart';
 import 'package:tiefprompt/providers/feature_provider.dart';
 import 'package:tiefprompt/providers/keybinding_provider.dart';
+import 'package:tiefprompt/providers/prompter_config.dart';
 import 'package:tiefprompt/providers/prompter_provider.dart';
 import 'package:tiefprompt/providers/settings_provider.dart';
 import 'package:tiefprompt/services/script_service.dart';
@@ -30,6 +31,20 @@ class _ControlsVisible extends Notifier<bool> {
 final controlsVisibleProvider = NotifierProvider<_ControlsVisible, bool>(
   _ControlsVisible.new,
 );
+
+const double _kPortraitTextChromeGap = 8;
+
+double _portraitTopInset(BuildContext context, bool controlsVisible) {
+  final safe = MediaQuery.paddingOf(context).top;
+  final bar = controlsVisible ? kPortraitTopBarBodyHeight : 0.0;
+  return safe + bar + _kPortraitTextChromeGap;
+}
+
+double _portraitBottomInset(BuildContext context, bool controlsVisible) {
+  final safe = MediaQuery.paddingOf(context).bottom;
+  final bar = controlsVisible ? kPortraitBottomBarBodyHeight : 0.0;
+  return safe + bar + _kPortraitTextChromeGap;
+}
 
 class PrompterScreen extends ConsumerStatefulWidget {
   const PrompterScreen({super.key});
@@ -54,8 +69,7 @@ class _PrompterScreenState extends ConsumerState<PrompterScreen> {
     WakelockPlus.enable();
 
     SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
+      DeviceOrientation.portraitUp,
     ]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.leanBack);
 
@@ -90,6 +104,24 @@ class _PrompterScreenState extends ConsumerState<PrompterScreen> {
         (p) => (prompterConfig: p.config, displayCountdown: p.displayCountdown),
       ),
     );
+    final controlsVisible = ref.watch(controlsVisibleProvider);
+    final isPortrait =
+        MediaQuery.orientationOf(context) == Orientation.portrait;
+    final scrollableText = ScrollableText(
+      controller: _scrollableTextController,
+      text: script.text,
+      style: TextStyle(
+        fontSize: prompterDisplayFontSize(
+          prompterConfig.fontSize,
+          MediaQuery.orientationOf(context),
+        ),
+        fontFamily: prompterConfig.fontFamily,
+        color: Theme.of(context).colorScheme.onSurface,
+      ),
+      sideMargin:
+          (MediaQuery.of(context).size.width / 2) *
+          (prompterConfig.sideMargin / 100),
+    );
 
     return KeyboardListener(
       onKeyEvent: (keyEvent) {
@@ -109,21 +141,18 @@ class _PrompterScreenState extends ConsumerState<PrompterScreen> {
               onTap: () {
                 ref.read(controlsVisibleProvider.notifier).toggle();
               },
-              child: SafeArea(
-                minimum: const EdgeInsets.all(16.0),
-                child: ScrollableText(
-                  controller: _scrollableTextController,
-                  text: script.text,
-                  style: TextStyle(
-                    fontSize: prompterConfig.fontSize,
-                    fontFamily: prompterConfig.fontFamily,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                  sideMargin:
-                      (MediaQuery.of(context).size.width / 2) *
-                      (prompterConfig.sideMargin / 100),
-                ),
-              ),
+              child: isPortrait
+                  ? Padding(
+                      padding: EdgeInsets.only(
+                        top: _portraitTopInset(context, controlsVisible),
+                        bottom: _portraitBottomInset(context, controlsVisible),
+                      ),
+                      child: scrollableText,
+                    )
+                  : SafeArea(
+                      minimum: const EdgeInsets.all(16.0),
+                      child: scrollableText,
+                    ),
             ),
             if (prompterConfig.displayVerticalMarginBoxes)
               VerticalMargin(
@@ -139,19 +168,21 @@ class _PrompterScreenState extends ConsumerState<PrompterScreen> {
                 color: Theme.of(context).colorScheme.onSurface.withAlpha(60),
               ),
             CurrentChapterBanner(
-              offset: ref.watch(controlsVisibleProvider)
-                  ? EdgeInsets.fromLTRB(0, 64, 0, 0)
-                  : EdgeInsets.all(0),
+              offset: EdgeInsets.only(
+                top: isPortrait
+                    ? _portraitTopInset(context, controlsVisible)
+                    : (controlsVisible ? 64 : 0),
+              ),
             ),
-            if ((!ref.watch(controlsVisibleProvider) ||
+            if ((!controlsVisible ||
                     (prompterConfig.controlButtonsPosition ==
                             ControlButtonsPosition.left ||
                         prompterConfig.controlButtonsPosition ==
                             ControlButtonsPosition.right)) &&
                 prompterConfig.showControlButtons)
               PrompterControlButtonsOverlay(),
-            if (ref.watch(controlsVisibleProvider)) PrompterTopBar(),
-            if (ref.watch(controlsVisibleProvider)) PrompterBottomBar(),
+            if (controlsVisible) PrompterTopBar(),
+            if (controlsVisible) PrompterBottomBar(),
             if (displayCountdown && prompterConfig.countdownDuration > 0)
               CountdownTimer(
                 duration: prompterConfig.countdownDuration.toInt(),

@@ -49,3 +49,14 @@ abstract class PrompterConfiguration with _$PrompterConfiguration {
     return copyWith(fontSize: next);
   }
 }
+
+/// Landscape default (42) is tuned for a wide stage. A portrait phone renders
+/// two thirds of the stored size so several words fit on a line. The stored
+/// value is unchanged, so landscape keeps the configured size.
+double prompterDisplayFontSize(double configured, Orientation orientation) {
+  if (orientation != Orientation.portrait) return configured;
+  final scaled = configured * 2 / 3;
+  if (scaled < kPrompterMinFontSize) return kPrompterMinFontSize;
+  if (scaled > kPrompterMaxFontSize) return kPrompterMaxFontSize;
+  return scaled;
+}

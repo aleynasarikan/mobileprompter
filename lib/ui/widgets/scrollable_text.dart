@@ -10,6 +10,12 @@ import 'package:tiefprompt/services/karaoke_speech_follower.dart';
 import 'package:tiefprompt/services/speech_recognition_service.dart';
 import 'package:tiefprompt/ui/widgets/karaoke_text.dart';
 
+/// Width reserved for the karaoke debug strip in portrait, beside the text.
+const double kKaraokeDebugStripWidth = 64;
+
+const double kPortraitTextHorizontalPadding = 20;
+const double kPortraitTextDebugGap = 12;
+
 class _UserScrolling extends Notifier<bool> {
   @override
   bool build() => false;
@@ -244,7 +250,8 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
 
     final mediaHeight = MediaQuery.of(context).size.height;
     final mediaWidth = MediaQuery.of(context).size.width;
-    final renderWidth = mediaWidth - widget.sideMargin * 2;
+    final isPortrait =
+        MediaQuery.orientationOf(context) == Orientation.portrait;
     _topPadding = mediaHeight;
 
     final (
@@ -271,7 +278,188 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
       });
     }
 
-    final scrollView = NotificationListener<ScrollNotification>(
+    if (!kKaraokeDebugMode) {
+      if (isPortrait) {
+        return _portraitBody(
+          reserveDebugStrip: false,
+          mirroredX: mirroredX,
+          mirroredY: mirroredY,
+          markdownEnabled: markdownEnabled,
+          alignment: alignment,
+          endSpacerHeight: mediaHeight,
+        );
+      }
+      return _buildScrollView(
+        contentWidth: mediaWidth - widget.sideMargin * 2,
+        leftInset: widget.sideMargin,
+        rightInset: widget.sideMargin,
+        topInset: mediaHeight,
+        bottomInset: 0,
+        endSpacerHeight: mediaHeight,
+        mirroredX: mirroredX,
+        mirroredY: mirroredY,
+        markdownEnabled: markdownEnabled,
+        alignment: alignment,
+      );
+    }
+
+    ref.listen(speechRecognitionProvider.select((s) => s.isActive), (
+      _,
+      active,
+    ) {
+      widget.controller.karaokeController.speechMode = active;
+      if (active) _speechFollower?.reset();
+    });
+
+    if (isPortrait) {
+      return _portraitBody(
+        reserveDebugStrip: true,
+        mirroredX: mirroredX,
+        mirroredY: mirroredY,
+        markdownEnabled: markdownEnabled,
+        alignment: alignment,
+        endSpacerHeight: mediaHeight,
+      );
+    }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        _buildScrollView(
+          contentWidth: mediaWidth - widget.sideMargin * 2,
+          leftInset: widget.sideMargin,
+          rightInset: widget.sideMargin,
+          topInset: mediaHeight,
+          bottomInset: 0,
+          endSpacerHeight: mediaHeight,
+          mirroredX: mirroredX,
+          mirroredY: mirroredY,
+          markdownEnabled: markdownEnabled,
+          alignment: alignment,
+        ),
+        Positioned(
+          top: 0,
+          bottom: 0,
+          right: 0,
+          child: Center(child: _debugPanel()),
+        ),
+        if (_speechFollower case final follower?)
+          Positioned(
+            top: 8,
+            left: 8,
+            child: IgnorePointer(
+              child: _SpeechFollowDebugInfo(
+                follower: follower,
+                controller: widget.controller.karaokeController,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Portrait keeps the debug strip in its own column so it cannot cover words.
+  Widget _portraitBody({
+    required bool reserveDebugStrip,
+    required bool mirroredX,
+    required bool mirroredY,
+    required bool markdownEnabled,
+    required TextAlign alignment,
+    required double endSpacerHeight,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final strip = reserveDebugStrip ? kKaraokeDebugStripWidth : 0.0;
+        final textAreaWidth = constraints.maxWidth - strip;
+        final rightMinimum = reserveDebugStrip
+            ? kPortraitTextDebugGap
+            : kPortraitTextHorizontalPadding;
+        final leftInset = widget.sideMargin < kPortraitTextHorizontalPadding
+            ? kPortraitTextHorizontalPadding
+            : widget.sideMargin;
+        final rightInset = widget.sideMargin < rightMinimum
+            ? rightMinimum
+            : widget.sideMargin;
+        final available = textAreaWidth - leftInset - rightInset;
+        final scrollView = _buildScrollView(
+          contentWidth: available < 1 ? textAreaWidth : available,
+          leftInset: available < 1 ? 0 : leftInset,
+          rightInset: available < 1 ? 0 : rightInset,
+          topInset: endSpacerHeight,
+          bottomInset: 0,
+          endSpacerHeight: endSpacerHeight,
+          mirroredX: mirroredX,
+          mirroredY: mirroredY,
+          markdownEnabled: markdownEnabled,
+          alignment: alignment,
+        );
+        if (!reserveDebugStrip) return scrollView;
+        return _portraitKaraokeRow(scrollView);
+      },
+    );
+  }
+
+  Widget _portraitKaraokeRow(Widget scrollView) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: Column(
+            children: [
+              if (_speechFollower case final follower?)
+                IgnorePointer(
+                  child: _SpeechFollowDebugInfo(
+                    follower: follower,
+                    controller: widget.controller.karaokeController,
+                  ),
+                ),
+              Expanded(child: scrollView),
+            ],
+          ),
+        ),
+        SizedBox(
+          width: kKaraokeDebugStripWidth,
+          child: ClipRect(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  primary: false,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: Center(child: _debugPanel()),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _debugPanel() {
+    return KaraokeDebugPanel(
+      controller: widget.controller.karaokeController,
+      onToggleSpeech: () =>
+          ref.read(speechRecognitionProvider.notifier).toggle(),
+    );
+  }
+
+  Widget _buildScrollView({
+    required double contentWidth,
+    required double leftInset,
+    required double rightInset,
+    required double topInset,
+    required double bottomInset,
+    required double endSpacerHeight,
+    required bool mirroredX,
+    required bool mirroredY,
+    required bool markdownEnabled,
+    required TextAlign alignment,
+  }) {
+    return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
         if (notification is ScrollStartNotification &&
             notification.dragDetails != null) {
@@ -303,10 +491,10 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
         child: SingleChildScrollView(
           controller: widget.controller.scrollController,
           padding: EdgeInsets.fromLTRB(
-            widget.sideMargin,
-            mediaHeight,
-            widget.sideMargin,
-            0,
+            leftInset,
+            topInset,
+            rightInset,
+            bottomInset,
           ),
           child: Column(
             children: [
@@ -317,7 +505,7 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
                   controller: widget.controller.karaokeController,
                   textAlign: alignment,
                   style: widget.style,
-                  width: renderWidth,
+                  width: contentWidth,
                   onLayout: _recomputeChapterOffsets,
                 )
               else if (markdownEnabled)
@@ -326,58 +514,18 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
                   controller: _markdownController,
                   textAlign: alignment,
                   style: widget.style,
-                  width: renderWidth,
+                  width: contentWidth,
                 )
               else
                 Text(widget.text, style: widget.style, textAlign: alignment),
               SizedBox(
-                height: mediaHeight,
+                height: endSpacerHeight,
                 child: Center(child: Text("The End", style: widget.style)),
               ),
             ],
           ),
         ),
       ),
-    );
-
-    if (!kKaraokeDebugMode) return scrollView;
-
-    ref.listen(speechRecognitionProvider.select((s) => s.isActive), (
-      _,
-      active,
-    ) {
-      widget.controller.karaokeController.speechMode = active;
-      if (active) _speechFollower?.reset();
-    });
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        scrollView,
-        Positioned(
-          top: 0,
-          bottom: 0,
-          right: 0,
-          child: Center(
-            child: KaraokeDebugPanel(
-              controller: widget.controller.karaokeController,
-              onToggleSpeech: () =>
-                  ref.read(speechRecognitionProvider.notifier).toggle(),
-            ),
-          ),
-        ),
-        if (_speechFollower case final follower?)
-          Positioned(
-            top: 8,
-            left: 8,
-            child: IgnorePointer(
-              child: _SpeechFollowDebugInfo(
-                follower: follower,
-                controller: widget.controller.karaokeController,
-              ),
-            ),
-          ),
-      ],
     );
   }
 
