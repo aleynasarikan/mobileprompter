@@ -1,0 +1,7 @@
+TiefPrompt is an extraordinarily simple teleprompter app for creators, presenters, and professionals. 
+
+Load your script from a file or paste it directly, then control playback with play, pause, speed adjustment, and orientation flip options.
+
+TiefPrompt is open-source and available across platforms. Perfect for video recording, live presentations, and speech practice.
+
+Fully featured with adjustable fonts, custom colors, and keyboard shortcuts to all your likings. Take control of your teleprompter with the no-distraction interface.

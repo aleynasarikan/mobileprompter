@@ -1,0 +1,270 @@
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:tiefprompt/ui/widgets/safe_scaffold.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tiefprompt/core/constants.dart';
+import 'package:tiefprompt/core/control_buttons.dart';
+import 'package:tiefprompt/providers/settings_provider.dart';
+import 'package:tiefprompt/ui/widgets/app_settings.dart';
+import 'package:tiefprompt/ui/widgets/async_settings_builder.dart';
+
+class DisplaySettingsScreen extends ConsumerWidget {
+  const DisplaySettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+
+    return AsyncSettingsBuilder(
+      state: settings,
+      screenTitle: context.tr("SettingsScreen.DisplaySettings"),
+      builder: (ref, value) {
+        final prompterConfig = value.config;
+
+        return SafeScaffold(
+          appBar: AppBar(
+            title: Text(context.tr("SettingsScreen.DisplaySettings")),
+          ),
+          body: ListView(
+            children: [
+              NumberAppSetting(
+                key: const Key(
+                  "DisplaySettingsScreen.NumberAppSetting_ScrollSpeed",
+                ),
+                feature: Feature.scrollSpeed,
+                value: prompterConfig.scrollSpeed,
+                displayText: context.tr(
+                  "SettingsScreen.NumberAppSetting_DefaultScrollSpeed",
+                ),
+                onValueChanged: (updatedValue) => ref
+                    .read(settingsProvider.notifier)
+                    .setScrollSpeed(updatedValue),
+                min: kPrompterMinSpeed,
+                max: kPrompterMaxSpeed,
+                stepSize: .1,
+                unit: context.tr(
+                  "SettingsScreen.NumberAppSetting_DefaultScrollSpeed_Unit",
+                ),
+              ),
+              BooleanAppSetting(
+                key: const Key("DisplaySettingsScreen.BooleanAppSetting_FlipX"),
+                feature: Feature.flipX,
+                value: prompterConfig.mirroredX,
+                displayText: context.tr(
+                  "SettingsScreen.BooleanAppSetting_DefaultFlipX",
+                ),
+                onValueChanged: (updatedValue) => ref
+                    .read(settingsProvider.notifier)
+                    .setMirroredX(updatedValue),
+              ),
+              BooleanAppSetting(
+                key: const Key("DisplaySettingsScreen.BooleanAppSetting_FlipY"),
+                feature: Feature.flipY,
+                value: prompterConfig.mirroredY,
+                displayText: context.tr(
+                  "SettingsScreen.BooleanAppSetting_DefaultFlipY",
+                ),
+                onValueChanged: (updatedValue) => ref
+                    .read(settingsProvider.notifier)
+                    .setMirroredY(updatedValue),
+              ),
+              BooleanAppSetting(
+                key: const Key(
+                  "DisplaySettingsScreen.BooleanAppSetting_ControlButtonsEnable",
+                ),
+                feature: Feature.controlButtons,
+                displayText: context.tr(
+                  "SettingsScreen.BooleanAppSetting_ControlButtons",
+                ),
+                value: prompterConfig.showControlButtons,
+                onValueChanged: (updatedValue) => ref
+                    .read(settingsProvider.notifier)
+                    .setShowControlButtons(updatedValue),
+              ),
+              DropdownAppSetting(
+                key: const Key(
+                  "DisplaySettingsScreen.DropdownAppSetting_ControlButtonsPosition",
+                ),
+                feature: Feature.controlButtons,
+                displayText: context.tr(
+                  "SettingsScreen.DropdownAppSetting_ControlButtonPosition.Label",
+                ),
+                value: prompterConfig.controlButtonsPosition,
+                onValueChanged: (updatedValue) => ref
+                    .read(settingsProvider.notifier)
+                    .setControlButtonsPosition(updatedValue),
+                values: ControlButtonsPosition.values
+                    .map(
+                      (v) => (
+                        context.tr(
+                          "SettingsScreen.DropdownAppSetting_ControlButtonPosition.${v.name}",
+                        ),
+                        v,
+                      ),
+                    )
+                    .toList(),
+              ),
+              BooleanAppSetting(
+                key: const Key(
+                  "DisplaySettingsScreen.BooleanAppSetting_ReadingIndicators",
+                ),
+                feature: Feature.readingIndicatorBoxes,
+                value: prompterConfig.displayReadingIndicatorBoxes,
+                displayText: context.tr(
+                  "SettingsScreen.BooleanAppSetting_ReadingIndicatorBoxes",
+                ),
+                onValueChanged: (updatedValue) => ref
+                    .read(settingsProvider.notifier)
+                    .setDisplayReadingIndicatorBoxes(updatedValue),
+              ),
+              NumberAppSetting(
+                key: const Key(
+                  "DisplaySettingsScreen.NumberAppSetting_ReadingIndicatorsHeight",
+                ),
+                feature: Feature.readingIndicatorBoxes,
+                value: prompterConfig.readingIndicatorBoxesHeight,
+                displayText: context.tr(
+                  "SettingsScreen.NumberAppSetting_ReadingIndicatorBoxes",
+                ),
+                onValueChanged: (updatedValue) => ref
+                    .read(settingsProvider.notifier)
+                    .setReadingIndicatorBoxesHeight(updatedValue),
+                min: 0,
+                max: 100,
+                stepSize: 5,
+                unit: context.tr(
+                  "SettingsScreen.NumberAppSetting_ReadingIndicatorBoxes_Unit",
+                ),
+              ),
+              BooleanAppSetting(
+                key: const Key(
+                  "DisplaySettingsScreen.BooleanAppSetting_VerticalMarginsEnable",
+                ),
+                feature: Feature.verticalMargins,
+                value: prompterConfig.displayVerticalMarginBoxes,
+                displayText: context.tr(
+                  "SettingsScreen.BooleanAppSetting_VerticalMarginBoxes",
+                ),
+                onValueChanged: (updatedValue) => ref
+                    .read(settingsProvider.notifier)
+                    .setDisplayVerticalMarginBoxes(updatedValue),
+              ),
+              NumberAppSetting(
+                key: const Key(
+                  "DisplaySettingsScreen.NumberAppSetting_VerticalMarginsHeight",
+                ),
+                feature: Feature.verticalMargins,
+                value: prompterConfig.verticalMarginBoxesHeight,
+                displayText: context.tr(
+                  "SettingsScreen.NumberAppSetting_VerticalMarginBoxes",
+                ),
+                onValueChanged: (updatedValue) => ref
+                    .read(settingsProvider.notifier)
+                    .setVerticalMarginBoxesHeight(updatedValue),
+                min: 0,
+                max: 100,
+                stepSize: 5,
+                unit: context.tr(
+                  "SettingsScreen.NumberAppSetting_VerticalMarginBoxes_Unit",
+                ),
+              ),
+              BooleanAppSetting(
+                key: const Key(
+                  "DisplaySettingsScreen.BooleanAppSetting_FadeEnable",
+                ),
+                feature: Feature.verticalMarginFade,
+                value: prompterConfig.verticalMarginBoxesFadeEnabled,
+                displayText: context.tr(
+                  "SettingsScreen.BooleanAppSetting_VerticalMarginBoxes_FadeEnabled",
+                ),
+                onValueChanged: (updatedValue) => ref
+                    .read(settingsProvider.notifier)
+                    .setVerticalMarginBoxesFadeEnabled(updatedValue),
+              ),
+              NumberAppSetting(
+                key: const Key(
+                  "DisplaySettingsScreen.NumberAppSetting_FadeLength",
+                ),
+                feature: Feature.verticalMarginFade,
+                value: prompterConfig.verticalMarginBoxesFadeLength,
+                displayText: context.tr(
+                  "SettingsScreen.NumberAppSetting_VerticalMarginBoxes_FadeLength",
+                ),
+                onValueChanged: (updatedValue) => ref
+                    .read(settingsProvider.notifier)
+                    .setVerticalMarginBoxesFadeLength(updatedValue),
+                min: 0,
+                max: 100,
+                stepSize: 20,
+                unit: context.tr(
+                  "SettingsScreen.NumberAppSetting_VerticalMarginBoxes_FadeLength_Unit",
+                ),
+              ),
+              NumberAppSetting(
+                key: const Key("DisplaySettingsScreen.NumberAppSetting_SideMargin"),
+                feature: Feature.sideMargins,
+                value: prompterConfig.sideMargin,
+                displayText: context.tr(
+                  "SettingsScreen.NumberAppSetting_SideMargin",
+                ),
+                onValueChanged: (updatedValue) => ref
+                    .read(settingsProvider.notifier)
+                    .setSideMargin(updatedValue),
+                min: kPrompterMinSideMargin,
+                max: kPrompterMaxSideMargin,
+                unit: context.tr(
+                  "SettingsScreen.NumberAppSetting_SideMargin_Unit",
+                ),
+              ),
+              NumberAppSetting(
+                key: const Key(
+                  "DisplaySettingsScreen.NumberAppSetting_CountdownTimer",
+                ),
+                feature: Feature.countdownTimer,
+                value: prompterConfig.countdownDuration,
+                displayText: context.tr(
+                  "SettingsScreen.NumberAppSetting_CountdownTimer",
+                ),
+                onValueChanged: (updatedValue) => ref
+                    .read(settingsProvider.notifier)
+                    .setCountdownDuration(updatedValue),
+                min: 0,
+                max: 60,
+                stepSize: 1,
+                unit: context.tr(
+                  "SettingsScreen.NumberAppSetting_CountdownTimer_Unit",
+                ),
+              ),
+              ColorAppSetting(
+                key: const Key(
+                  "DisplaySettingsScreen.ColorAppSetting_PrompterBackgroundColor",
+                ),
+                feature: Feature.prompterBackgroundColor,
+                value: value.prompterBackgroundColor,
+                displayText: context.tr(
+                  "SettingsScreen.ColorAppSetting_PrompterBackgroundColor",
+                ),
+                onValueChanged: (updatedValue) => ref
+                    .read(settingsProvider.notifier)
+                    .setPrompterBackgroundColor(updatedValue),
+              ),
+              ColorAppSetting(
+                key: const Key(
+                  "DisplaySettingsScreen.ColorAppSetting_PrompterTextColor",
+                ),
+                feature: Feature.prompterTextColor,
+                value: value.prompterTextColor,
+                displayText: context.tr(
+                  "SettingsScreen.ColorAppSetting_PrompterTextColor",
+                ),
+                onValueChanged: (updatedValue) => ref
+                    .read(settingsProvider.notifier)
+                    .setPrompterTextColor(updatedValue),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}

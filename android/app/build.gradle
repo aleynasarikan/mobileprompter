@@ -1,0 +1,89 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+android {
+    namespace = "io.github.tiefseetauchner.tiefprompt"
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = "28.2.13676358"
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_11
+    }
+
+    defaultConfig {
+        applicationId = "io.github.tiefseetauchner.tiefprompt"
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+
+        externalNativeBuild {
+            cmake {
+                cFlags "-ffile-prefix-map=${rootDir}=."
+                cppFlags "-ffile-prefix-map=${rootDir}=."
+                arguments "-DANDROID_LINKER_FLAGS=-Wl,--build-id=none"
+            }
+        }
+    }
+    
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                storeFile = keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+                storePassword = keystoreProperties["storePassword"]
+                keyAlias = keystoreProperties["keyAlias"]
+                keyPassword = keystoreProperties["keyPassword"]
+            } else {
+                println "Keystore properties file not found. No signing configuration will be applied."
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    android {
+        dependenciesInfo {
+            // Disables dependency metadata when building APKs.
+            includeInApk = false
+        }
+    }
+
+
+    android.applicationVariants.all { variant ->
+        variant.outputs.each { output ->
+            def abiCode = [
+                'armeabi-v7a': 1,
+                'arm64-v8a' : 2,
+                'x86'       : 3,
+                'x86_64'    : 4
+            ][output.getFilter(com.android.build.OutputFile.ABI)] ?: 0
+
+            output.versionCodeOverride = flutter.versionCode * 10 + abiCode
+        }
+    }
+}
+
+flutter {
+    source = "../.."
+}

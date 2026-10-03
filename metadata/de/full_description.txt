@@ -1,0 +1,7 @@
+TiefPrompt ist eine außergewöhnlich einfache Teleprompter-App für Kreative, Vortragende und Profis.
+
+Lade dein Skript aus einer Datei oder füge es direkt ein, und steuere die Wiedergabe mit Abspielen, Pause, Geschwindigkeitsanpassung und Spiegelungsoptionen.
+
+TiefPrompt ist Open Source und plattformübergreifend verfügbar. Perfekt für Videoaufnahmen, Live-Präsentationen und Redetraining.
+
+Voll ausgestattet mit anpassbaren Schriftarten, individuellen Farben und frei belegbaren Tastenkombinationen. Übernimm die volle Kontrolle über deinen Teleprompter mit einer ablenkungsfreien Oberfläche.

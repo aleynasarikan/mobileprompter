@@ -1,0 +1,315 @@
+name: Flutter Release
+
+on:
+  push:
+    tags:
+      - "v*"
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    name: Build for Linux
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          path: app
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Build Linux App
+        run: |
+          sudo apt-get update
+          sudo apt-get install \
+            clang cmake git \
+            ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev \
+            libstdc++-12-dev
+          mkdir ../artifacts/
+          ./tools/build.sh -t linux -f foss -b ../artifacts/ -V
+        working-directory: app
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: tiefprompt-${{ runner.os }}
+          path: artifacts/*
+
+  build-windows:
+    name: Build for Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          path: app
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Build Windows App
+        shell: bash
+        run: |
+          mkdir ../artifacts/
+          ./tools/build.sh -t windows,windowsmsix -f foss -b ../artifacts/ -V
+        working-directory: app
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: tiefprompt-${{ runner.os }}
+          path: artifacts/*
+
+  build-apple:
+    name: Build for macOS and iOS
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          path: app
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Prep artifacts path
+        shell: bash
+        run: |
+          mkdir artifacts/
+
+      - name: Create temp keychain & import certificates
+        shell: bash
+        run: |
+          export KEYCHAIN=build.keychain-db
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security default-keychain -s "$KEYCHAIN"
+          mkdir -p keys
+          echo "$MACOS_APPSTORE_APP_CERT_P12_BASE64" | base64 -d > keys/appstore-app.p12
+          echo "$MACOS_APPSTORE_INSTALLER_CERT_P12_BASE64" | base64 -d > keys/appstore-installer.p12
+          security import keys/appstore-app.p12 -k "$KEYCHAIN" -P "$MACOS_APPSTORE_CERT_PASSWORD" \
+            -T /usr/bin/codesign -T /usr/bin/productsign -T /usr/bin/pkgbuild -T /usr/bin/productbuild
+          security import keys/appstore-installer.p12 -k "$KEYCHAIN" -P "$MACOS_APPSTORE_CERT_PASSWORD" \
+            -T /usr/bin/codesign -T /usr/bin/productsign -T /usr/bin/pkgbuild -T /usr/bin/productbuild
+          echo "$MACOS_DEVID_APP_CERT_P12_BASE64" | base64 -d > keys/devid-app.p12
+          echo "$MACOS_DEVID_INSTALLER_CERT_P12_BASE64" | base64 -d > keys/devid-installer.p12
+          security import keys/devid-app.p12 -k "$KEYCHAIN" -P "$MACOS_DEVID_CERT_PASSWORD" \
+            -T /usr/bin/codesign -T /usr/bin/productsign -T /usr/bin/pkgbuild -T /usr/bin/productbuild
+          security import keys/devid-installer.p12 -k "$KEYCHAIN" -P "$MACOS_DEVID_CERT_PASSWORD" \
+            -T /usr/bin/codesign -T /usr/bin/productsign -T /usr/bin/pkgbuild -T /usr/bin/productbuild
+          echo "$DISTRIBUTION_APP_CERT_P12_BASE64" | base64 -d > keys/distribution-app.p12
+          security import keys/distribution-app.p12 -k "$KEYCHAIN" -P "$DISTRIBUTION_CERT_PASSWORD" \
+            -T /usr/bin/codesign -T /usr/bin/productsign -T /usr/bin/pkgbuild -T /usr/bin/productbuild
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" ~/Library/Keychains/login.keychain-db
+        env:
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          MACOS_APPSTORE_APP_CERT_P12_BASE64: ${{ secrets.MACOS_APPSTORE_APP_CERT_P12_BASE64 }}
+          MACOS_APPSTORE_INSTALLER_CERT_P12_BASE64: ${{ secrets.MACOS_APPSTORE_INSTALLER_CERT_P12_BASE64 }}
+          MACOS_APPSTORE_CERT_PASSWORD: ${{ secrets.MACOS_APPSTORE_CERT_PASSWORD }}
+          MACOS_DEVID_APP_CERT_P12_BASE64: ${{ secrets.MACOS_DEVID_APP_CERT_P12_BASE64 }}
+          MACOS_DEVID_INSTALLER_CERT_P12_BASE64: ${{ secrets.MACOS_DEVID_INSTALLER_CERT_P12_BASE64 }}
+          MACOS_DEVID_CERT_PASSWORD: ${{ secrets.MACOS_DEVID_CERT_PASSWORD }}
+          DISTRIBUTION_APP_CERT_P12_BASE64: ${{ secrets.DISTRIBUTION_APP_CERT_P12_BASE64 }}
+          DISTRIBUTION_CERT_PASSWORD: ${{ secrets.DISTRIBUTION_CERT_PASSWORD }}
+        working-directory: app
+
+      - name: Write provisioning profile
+        run: |
+          mkdir -p keys
+          echo "${{ secrets.MACOS_APPSTORE_PROVISIONPROFILE_BASE64 }}" | base64 -d > keys/TiefPrompt_Prod_Provisioning.provisionprofile
+          echo "${{ secrets.IOS_APPSTORE_PROVISIONPROFILE_BASE64 }}" | base64 -d > keys/TiefPrompt_iOS_Prod_Provisioning.mobileprovision
+        working-directory: app
+
+      # - name: Build macOS and iOS App for App Store publishing
+      #   shell: bash
+      #   run: |
+      #     mkdir -p package
+      #     export MACOS_CODE_SIGN_KEY="3rd Party Mac Developer Application: Lena Tauchner (RJD48MM8G9)"
+      #     export MACOS_PACKAGE_SIGN_KEY="3rd Party Mac Developer Installer: Lena Tauchner (RJD48MM8G9)"
+      #     export MACOS_PROVISIONING_PROFILE=./keys/TiefPrompt_Prod_Provisioning.provisionprofile
+      #     export IOS_CODE_SIGN_KEY="Apple Distribution: Lena Tauchner (RJD48MM8G9)"
+      #     export IOS_PROVISIONING_PROFILE="./keys/TiefPrompt_iOS_Prod_Provisioning.mobileprovision"
+      #     ./tools/build.sh -t macospkg,iosipa -f freemium -b ./package -V
+      #   working-directory: app
+
+      - name: Write app api key
+        run: |
+          echo "${{ secrets.AC_API_PRIVATE_KEY }}" | base64 -d > keys/AuthKey_${{ secrets.AC_API_KEY_ID }}.p8
+        working-directory: app
+
+      # - name: Publish to App Store
+      #   shell: bash
+      #   working-directory: app
+      #   run: |
+      #     export API_PRIVATE_KEYS_DIR=./keys
+      #     xcrun altool --validate-app \
+      #       -f package/freemium_tiefprompt.pkg \
+      #       -t macos \
+      #       --apiKey ${{ secrets.AC_API_KEY_ID }} \
+      #       --apiIssuer "${{ secrets.API_KEY_ISSUER }}"
+      #     xcrun altool --upload-app \
+      #       -f package/freemium_tiefprompt.pkg \
+      #       -t macos \
+      #       --apiKey ${{ secrets.AC_API_KEY_ID }} \
+      #       --apiIssuer "${{ secrets.API_KEY_ISSUER }}"
+      #     xcrun altool --validate-app \
+      #       -f package/freemium_Runner.ipa \
+      #       -t ios \
+      #       --apiKey ${{ secrets.AC_API_KEY_ID }} \
+      #       --apiIssuer "${{ secrets.API_KEY_ISSUER }}"
+      #     xcrun altool --upload-app \
+      #       -f package/freemium_Runner.ipa \
+      #       -t ios \
+      #       --apiKey ${{ secrets.AC_API_KEY_ID }} \
+      #       --apiIssuer "${{ secrets.API_KEY_ISSUER }}"
+
+      - name: Build iOS and notarized macOS App
+        shell: bash
+        run: |
+          export MACOS_CODE_SIGN_KEY="Developer ID Application: Lena Tauchner (RJD48MM8G9)"
+          export MACOS_PACKAGE_SIGN_KEY="Developer ID Installer: Lena Tauchner (RJD48MM8G9)"
+          export AC_API_KEY_ISSUER="${{ secrets.API_KEY_ISSUER }}"
+          export AC_API_KEY_ID="${{ secrets.AC_API_KEY_ID }}"
+          export AC_API_PRIVATE_KEY="./keys/AuthKey_${{ secrets.AC_API_KEY_ID }}.p8"
+          export IOS_CODE_SIGN_KEY="Apple Distribution: Lena Tauchner (RJD48MM8G9)"
+          export IOS_PROVISIONING_PROFILE="./keys/TiefPrompt_iOS_Prod_Provisioning.mobileprovision"
+          ./tools/build.sh -t macos,macospkg,iosipa -f foss -b ../artifacts -Vn
+        working-directory: app
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: tiefprompt-${{ runner.os }}
+          path: artifacts/*
+
+  build-android:
+    name: Build for Android
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Decode Keystore
+        run: |
+          mkdir -p keys
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > keys/release.keystore
+
+      - name: Create key.properties
+        run: |
+          cat <<EOF > android/key.properties
+          storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=/keys/release.keystore
+          EOF
+
+      - name: Repo Permissions
+        run: chmod -R 777 .
+
+      - name: package
+        run: ./tools/package.sh -f foss
+
+      - name: copy packages
+        run: |
+          mkdir -p artifacts/
+          cp -r package/* artifacts/
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: tiefprompt-android
+          path: artifacts/*
+
+  nightly-release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: [build-linux, build-windows, build-android, build-apple]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Move / create the nightly tag
+        env:
+          GIT_AUTHOR_NAME: github-actions
+          GIT_AUTHOR_EMAIL: github-actions@github.com
+          GIT_COMMITTER_NAME: github-actions
+          GIT_COMMITTER_EMAIL: github-actions@github.com
+        run: |
+          git tag -fa nightly ${{ github.sha }} -m "nightly $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          git push -f origin refs/tags/nightly
+
+      - name: Download artifact
+        id: download-artifact
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+          merge-multiple: true
+
+      - name: Update Nightly GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: nightly
+          name: Nightly
+          body: "Latest build from main branch."
+          prerelease: true
+          draft: false
+          generate_release_notes: false
+          files: artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.PUBLISH_GITHUB_TOKEN }}
+
+  version-release:
+    if: startswith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    needs: [build-linux, build-windows, build-android, build-apple]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download artifact
+        id: download-artifact
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+          merge-multiple: true
+
+      - name: Determine Pre-release Status
+        id: prerelease_check
+        run: |
+          TAG_NAME="${{ github.ref_name }}"
+          if [[ "$TAG_NAME" =~ ^v0\.|- ]]; then
+            echo "prerelease=true" >> $GITHUB_ENV
+          else
+            echo "prerelease=false" >> $GITHUB_ENV
+          fi
+
+      - name: Publish Versioned GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: "Stable release for ${{ github.ref_name }}."
+          prerelease: ${{ env.prerelease }}
+          draft: true
+          generate_release_notes: true
+          files: artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.PUBLISH_GITHUB_TOKEN }}
