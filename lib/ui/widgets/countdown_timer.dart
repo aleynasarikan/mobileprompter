@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cueline/ui/theme/cueline_tokens.dart';
 
 class CountdownTimer extends StatefulWidget {
   final int duration;
@@ -38,48 +39,37 @@ class _CountdownTimerState extends State<CountdownTimer> {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 100,
-      height: 100,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Stack(
-            children: [
-              Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Theme.of(context).colorScheme.surface,
-                ),
+    final colors = Theme.of(context).colorScheme;
+    return Center(
+      child: SizedBox(
+        width: 128,
+        height: 128,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox(
+              width: 128,
+              height: 128,
+              child: CircularProgressIndicator(
+                value: progress,
+                strokeWidth: 3,
+                backgroundColor: colors.onSurface.withValues(alpha: 0.12),
+                valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
               ),
-              SizedBox(
-                width: 200,
-                height: 200,
-                child: CircularProgressIndicator(
-                  value: progress,
-                  strokeWidth: 16,
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.surface.withAlpha(50),
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Text(
-            '$remainingTime',
-            key: ValueKey<int>(remainingTime),
-            style: TextStyle(
-              fontSize: 100,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
             ),
-          ),
-        ],
+            Text(
+              '$remainingTime',
+              key: ValueKey<int>(remainingTime),
+              style: TextStyle(
+                fontSize: 56,
+                fontWeight: FontWeight.w500,
+                letterSpacing: -1,
+                color: colors.onSurface,
+                fontFamily: CueLineTokens.uiFontFamily,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

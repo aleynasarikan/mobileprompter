@@ -1,11 +1,11 @@
 // dart format width=80
 // ignore_for_file: type=lint
 import 'package:drift/drift.dart' as i0;
-import 'package:tiefprompt/models/script_model.drift.dart' as i1;
-import 'package:tiefprompt/models/keybinding.drift.dart' as i2;
-import 'package:tiefprompt/models/settings_preset_model.drift.dart' as i3;
-import 'package:tiefprompt/models/app_state.drift.dart' as i4;
-import 'package:tiefprompt/models/custom_font_model.drift.dart' as i5;
+import 'package:cueline/models/script_model.drift.dart' as i1;
+import 'package:cueline/models/keybinding.drift.dart' as i2;
+import 'package:cueline/models/settings_preset_model.drift.dart' as i3;
+import 'package:cueline/models/app_state.drift.dart' as i4;
+import 'package:cueline/models/custom_font_model.drift.dart' as i5;
 
 abstract class $AppDatabase extends i0.GeneratedDatabase {
   $AppDatabase(i0.QueryExecutor e) : super(e);

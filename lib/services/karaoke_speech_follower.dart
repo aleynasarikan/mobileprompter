@@ -1,9 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:tiefprompt/services/karaoke_matcher.dart';
-import 'package:tiefprompt/services/speech_recognition_service.dart';
-import 'package:tiefprompt/ui/widgets/karaoke_text.dart';
+import 'package:cueline/services/karaoke_matcher.dart';
+import 'package:cueline/services/karaoke_timing_log.dart';
+import 'package:cueline/services/speech_recognition_service.dart';
+import 'package:cueline/ui/widgets/karaoke_text.dart';
 
 /// Moves [KaraokeController.activeWordIndex] along with recognized speech
 /// while [KaraokeController.speechMode] is on. Notifies for debug output.
@@ -81,7 +82,12 @@ class KaraokeSpeechFollower extends ChangeNotifier {
       _tracker?.onSessionStart();
       return;
     }
-    if (!controller.speechMode || event is! SpeechResult) return;
+    if (event is! SpeechResult) return;
+    if (!controller.speechMode) {
+      KaraokeTimingLog.cancelOpenPartial();
+      return;
+    }
+    KaraokeTimingLog.followerReceived(text: event.text, isFinal: event.isFinal);
     _utterancePartial = event.isFinal ? '' : event.text;
     if (event.isFinal) {
       lastFinal = event.text;
@@ -91,22 +97,34 @@ class KaraokeSpeechFollower extends ChangeNotifier {
     }
     if (_ignoreUtterance) {
       if (event.isFinal) _ignoreUtterance = false;
+      KaraokeTimingLog.followerDropped('ignore_utterance');
       notifyListeners();
       return;
     }
     // The drag ends with a seek that resets the context anyway.
     if (controller.isUserScrolling) {
+      KaraokeTimingLog.followerDropped('user_scrolling');
       notifyListeners();
       return;
     }
 
     final tracker = _trackerForCurrentDocument();
-    if (tracker == null) return;
+    if (tracker == null) {
+      KaraokeTimingLog.followerDropped('no_document');
+      return;
+    }
 
     final active = controller.activeWordIndex;
     final result = event.isFinal
         ? tracker.onFinal(event.text, active)
         : tracker.onPartial(event.text, active);
+    KaraokeTimingLog.matcher(
+      text: event.text,
+      isFinal: event.isFinal,
+      produced: result?.wordIndex,
+      decision: result?.decision.name ?? 'duplicate_or_empty',
+      matchIndex: result?.match.wordIndex ?? -1,
+    );
 
     if (result != null) {
       lastResult = result;
@@ -116,6 +134,9 @@ class KaraokeSpeechFollower extends ChangeNotifier {
         _writing = false;
         _expectedIndex = controller.activeWordIndex;
       }
+    }
+    if (controller.activeWordIndex == active) {
+      KaraokeTimingLog.cancelOpenPartial();
     }
     notifyListeners();
   }

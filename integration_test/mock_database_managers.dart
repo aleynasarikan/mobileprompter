@@ -4,14 +4,14 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:tiefprompt/core/constants.dart';
-import 'package:tiefprompt/models/app_state.drift.dart';
-import 'package:tiefprompt/models/database.dart';
-import 'package:tiefprompt/models/keybinding.drift.dart';
-import 'package:tiefprompt/models/script_model.drift.dart';
-import 'package:tiefprompt/models/settings_preset_model.drift.dart';
-import 'package:tiefprompt/providers/database_provider.dart';
-import 'package:tiefprompt/providers/settings_provider.dart';
+import 'package:cueline/core/constants.dart';
+import 'package:cueline/models/app_state.drift.dart';
+import 'package:cueline/models/database.dart';
+import 'package:cueline/models/keybinding.drift.dart';
+import 'package:cueline/models/script_model.drift.dart';
+import 'package:cueline/models/settings_preset_model.drift.dart';
+import 'package:cueline/providers/database_provider.dart';
+import 'package:cueline/providers/settings_provider.dart';
 
 import 'constants.dart';
 

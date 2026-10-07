@@ -5,11 +5,12 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter/material.dart';
-import 'package:tiefprompt/core/control_buttons.dart';
-import 'package:tiefprompt/models/database.dart';
-import 'package:tiefprompt/providers/prompter_config.dart';
-import 'package:tiefprompt/providers/settings_provider.dart';
+import 'package:cueline/core/control_buttons.dart';
+import 'package:cueline/models/database.dart';
+import 'package:cueline/providers/prompter_config.dart';
+import 'package:cueline/providers/settings_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
+
 import 'generated/schema.dart';
 
 import 'generated/schema_v2.dart' as v2;

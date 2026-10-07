@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tiefprompt/core/constants.dart';
-import 'package:tiefprompt/ui/screens/open_file_screen.dart';
+import 'package:cueline/core/constants.dart';
+import 'package:cueline/ui/screens/open_file_screen.dart';
 import 'package:tief_screen/tief_screen.dart';
 import 'package:tief_test_harness/tief_test_harness.dart';
 

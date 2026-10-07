@@ -5,10 +5,10 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = tiefprompt
+PRODUCT_NAME = CueLine
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = io.github.tiefseetauchner.tiefprompt
+PRODUCT_BUNDLE_IDENTIFIER = app.cueline.teleprompter
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2025 Lena Tauchner. All rights reserved.
+PRODUCT_COPYRIGHT = Based on TiefPrompt © Lena Tauchner (MIT).

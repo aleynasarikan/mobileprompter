@@ -4,11 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tiefprompt/core/constants.dart';
-import 'package:tiefprompt/core/disabled_feature_screen_state.dart';
-import 'package:tiefprompt/models/keybinding.dart';
-import 'package:tiefprompt/providers/feature_provider.dart';
-import 'package:tiefprompt/providers/keybinding_provider.dart';
+import 'package:cueline/core/constants.dart';
+import 'package:cueline/core/disabled_feature_screen_state.dart';
+import 'package:cueline/models/keybinding.dart';
+import 'package:cueline/providers/feature_provider.dart';
+import 'package:cueline/providers/keybinding_provider.dart';
 
 abstract class AppSetting extends ConsumerWidget {
   final Feature feature;
@@ -194,6 +194,7 @@ class LinkAppSetting extends AppSetting {
   Widget buildSetting(BuildContext context, WidgetRef ref) {
     return ListTile(
       title: Text(displayText),
+      trailing: const Icon(Icons.chevron_right),
       onTap: enabled ? () => context.push(value) : null,
     );
   }

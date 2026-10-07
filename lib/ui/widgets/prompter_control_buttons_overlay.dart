@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tiefprompt/core/control_buttons.dart';
-import 'package:tiefprompt/providers/prompter_provider.dart';
+import 'package:cueline/core/control_buttons.dart';
+import 'package:cueline/providers/prompter_provider.dart';
+import 'package:cueline/ui/theme/cueline_tokens.dart';
 
-const double kPrompterControlButtonsOverlayIconSize = 45;
+const double kPrompterControlButtonsOverlayIconSize = 36;
 
 class PrompterControlButtonsOverlay extends ConsumerWidget {
   const PrompterControlButtonsOverlay({super.key});
@@ -13,6 +14,7 @@ class PrompterControlButtonsOverlay extends ConsumerWidget {
     final controlButtonsPosition = ref.watch(
       prompterProvider.select((p) => p.config.controlButtonsPosition),
     );
+    final tokens = CueLineTheme.of(context);
 
     return SafeArea(
       child: Container(
@@ -20,12 +22,10 @@ class PrompterControlButtonsOverlay extends ConsumerWidget {
           controlButtonsPosition,
         ),
         padding: EdgeInsets.all(kControlButtonMargin),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withAlpha(120),
-            borderRadius: BorderRadius.all(Radius.circular(10)),
-          ),
-          child: _ControlButtons(),
+        child: Material(
+          color: tokens.chromeFill,
+          borderRadius: BorderRadius.circular(CueLineTokens.radiusLg),
+          child: const _ControlButtons(),
         ),
       ),
     );
@@ -33,15 +33,18 @@ class PrompterControlButtonsOverlay extends ConsumerWidget {
 }
 
 class _ControlButtons extends ConsumerWidget {
-  List<Widget> _getButtons(WidgetRef ref) {
+  const _ControlButtons();
+
+  List<Widget> _getButtons(WidgetRef ref, Color foreground) {
+    final playing = ref.watch(prompterProvider.select((p) => p.isPlaying));
     return [
       IconButton(
         iconSize: kPrompterControlButtonsOverlayIconSize,
+        tooltip: playing ? 'Pause' : 'Play',
         onPressed: () => ref.read(prompterProvider.notifier).togglePlayPause(),
         icon: Icon(
-          ref.watch(prompterProvider).isPlaying
-              ? Icons.pause_rounded
-              : Icons.play_arrow_rounded,
+          playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+          color: foreground,
         ),
       ),
     ];
@@ -52,17 +55,16 @@ class _ControlButtons extends ConsumerWidget {
     final controlButtonsPosition = ref.watch(
       prompterProvider.select((p) => p.config.controlButtonsPosition),
     );
+    final foreground = Theme.of(context).colorScheme.onSurface;
+    final buttons = _getButtons(ref, foreground);
 
     switch (controlButtonsPosition) {
       case ControlButtonsPosition.left:
       case ControlButtonsPosition.right:
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: _getButtons(ref),
-        );
+        return Column(mainAxisSize: MainAxisSize.min, children: buttons);
       case ControlButtonsPosition.bottom:
       case ControlButtonsPosition.top:
-        return Row(mainAxisSize: MainAxisSize.min, children: _getButtons(ref));
+        return Row(mainAxisSize: MainAxisSize.min, children: buttons);
     }
   }
 }

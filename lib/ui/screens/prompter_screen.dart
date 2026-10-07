@@ -1,25 +1,31 @@
+import 'dart:async';
+
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tiefprompt/core/constants.dart';
-import 'package:tiefprompt/core/control_buttons.dart';
-import 'package:tiefprompt/core/debouncer.dart';
-import 'package:tiefprompt/models/keybinding.dart';
-import 'package:tiefprompt/providers/feature_provider.dart';
-import 'package:tiefprompt/providers/keybinding_provider.dart';
-import 'package:tiefprompt/providers/prompter_config.dart';
-import 'package:tiefprompt/providers/prompter_provider.dart';
-import 'package:tiefprompt/providers/settings_provider.dart';
-import 'package:tiefprompt/services/script_service.dart';
-import 'package:tiefprompt/ui/widgets/countdown_timer.dart';
-import 'package:tiefprompt/ui/widgets/current_chapter_banner.dart';
-import 'package:tiefprompt/ui/widgets/prompter_bottom_bar.dart';
-import 'package:tiefprompt/ui/widgets/prompter_control_buttons_overlay.dart';
-import 'package:tiefprompt/ui/widgets/prompter_top_bar.dart';
-import 'package:tiefprompt/ui/widgets/vertical_margin.dart';
-import 'package:tiefprompt/ui/widgets/scrollable_text.dart';
-import 'package:tiefprompt/providers/script_provider.dart';
+import 'package:cueline/core/constants.dart';
+import 'package:cueline/core/control_buttons.dart';
+import 'package:cueline/core/debouncer.dart';
+import 'package:cueline/models/keybinding.dart';
+import 'package:cueline/providers/feature_provider.dart';
+import 'package:cueline/providers/keybinding_provider.dart';
+import 'package:cueline/providers/prompter_config.dart';
+import 'package:cueline/providers/prompter_provider.dart';
+import 'package:cueline/providers/settings_provider.dart';
+import 'package:cueline/providers/speech_recognition_provider.dart';
+import 'package:cueline/services/script_service.dart';
+import 'package:cueline/services/speech_recognition_service.dart';
+import 'package:cueline/ui/widgets/countdown_timer.dart';
+import 'package:cueline/ui/widgets/current_chapter_banner.dart';
+import 'package:cueline/ui/widgets/prompter_bottom_bar.dart';
+import 'package:cueline/ui/widgets/prompter_control_buttons_overlay.dart';
+import 'package:cueline/ui/widgets/prompter_speech_status.dart';
+import 'package:cueline/ui/widgets/prompter_top_bar.dart';
+import 'package:cueline/ui/widgets/vertical_margin.dart';
+import 'package:cueline/ui/widgets/scrollable_text.dart';
+import 'package:cueline/providers/script_provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 class _ControlsVisible extends Notifier<bool> {
@@ -35,13 +41,13 @@ final controlsVisibleProvider = NotifierProvider<_ControlsVisible, bool>(
 const double _kPortraitTextChromeGap = 8;
 
 double _portraitTopInset(BuildContext context, bool controlsVisible) {
-  final safe = MediaQuery.paddingOf(context).top;
+  final safe = MediaQuery.viewPaddingOf(context).top;
   final bar = controlsVisible ? kPortraitTopBarBodyHeight : 0.0;
   return safe + bar + _kPortraitTextChromeGap;
 }
 
 double _portraitBottomInset(BuildContext context, bool controlsVisible) {
-  final safe = MediaQuery.paddingOf(context).bottom;
+  final safe = MediaQuery.viewPaddingOf(context).bottom;
   final bar = controlsVisible ? kPortraitBottomBarBodyHeight : 0.0;
   return safe + bar + _kPortraitTextChromeGap;
 }
@@ -53,14 +59,22 @@ class PrompterScreen extends ConsumerStatefulWidget {
   ConsumerState<ConsumerStatefulWidget> createState() => _PrompterScreenState();
 }
 
-class _PrompterScreenState extends ConsumerState<PrompterScreen> {
+class _PrompterScreenState extends ConsumerState<PrompterScreen>
+    with WidgetsBindingObserver {
   final _focusNode = FocusNode();
   late final ScrollableTextController _scrollableTextController;
   late final Debouncer _scrollableTextControllerSaveDebouncer;
+  bool _lifecyclePausedListening = false;
+
+  /// `ref` cannot be used in [dispose]. The service is keep-alive and owns
+  /// the microphone, so it is captured here to close listening on exit.
+  late final SpeechRecognitionService _speechService;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _speechService = ref.read(speechRecognitionServiceProvider);
     _scrollableTextController = ScrollableTextController();
     _scrollableTextControllerSaveDebouncer = PeriodicRunDebouncer(
       delay: Duration(seconds: 1),
@@ -70,16 +84,20 @@ class _PrompterScreenState extends ConsumerState<PrompterScreen> {
 
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
     ]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.leanBack);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollableTextController.scrollController.hasClients) {
-        final storedScrollOffset = ref.read(scriptProvider).scrollPosition;
-        _scrollableTextController.jumpTo(
-          storedScrollOffset ?? MediaQuery.of(context).size.height / 2,
-        );
-      }
+      if (!mounted) return;
+      if (!_scrollableTextController.scrollController.hasClients) return;
+      // Offset 0 already places the first line on the reading line.
+      // The old default (half the screen) skipped that lead-in and, for a
+      // short script, scrolled the words off the top.
+      final storedScrollOffset = ref.read(scriptProvider).scrollPosition;
+      if (storedScrollOffset == null || storedScrollOffset <= 0) return;
+      _scrollableTextController.jumpTo(storedScrollOffset);
     });
 
     ref.read(settingsProvider).whenData((data) {
@@ -92,11 +110,28 @@ class _PrompterScreenState extends ConsumerState<PrompterScreen> {
   @override
   Widget build(BuildContext context) {
     final script = ref.watch(scriptProvider);
+    final scriptIsEmpty = script.text.trim().isEmpty;
 
     ref.listen(settingsProvider, (previous, next) async {
       next.whenData((data) {
         ref.read(prompterProvider.notifier).applySettings(data);
       });
+    });
+
+    ref.listen(prompterProvider.select((p) => p.isPlaying), (_, playing) {
+      final speech = ref.read(speechRecognitionProvider.notifier);
+      if (playing) {
+        unawaited(
+          speech.start(
+            preferredLocaleId: preferredSpeechLocaleIdForScript(
+              ref.read(scriptProvider).text,
+            ),
+          ),
+        );
+      } else {
+        _lifecyclePausedListening = false;
+        unawaited(speech.stop());
+      }
     });
 
     final (:prompterConfig, :displayCountdown) = ref.watch(
@@ -183,6 +218,29 @@ class _PrompterScreenState extends ConsumerState<PrompterScreen> {
               PrompterControlButtonsOverlay(),
             if (controlsVisible) PrompterTopBar(),
             if (controlsVisible) PrompterBottomBar(),
+            if (scriptIsEmpty)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Text(
+                    context.tr('PrompterScreen.Speech.emptyScript'),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 20,
+                    ),
+                  ),
+                ),
+              ),
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: _portraitBottomInset(context, controlsVisible) + 8,
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: PrompterSpeechStatus(controlsVisible: controlsVisible),
+              ),
+            ),
             if (displayCountdown && prompterConfig.countdownDuration > 0)
               CountdownTimer(
                 duration: prompterConfig.countdownDuration.toInt(),
@@ -194,7 +252,33 @@ class _PrompterScreenState extends ConsumerState<PrompterScreen> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!mounted) return;
+    final speech = ref.read(speechRecognitionProvider.notifier);
+    switch (state) {
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.paused:
+        if (ref.read(speechRecognitionProvider).isActive) {
+          _lifecyclePausedListening = true;
+          unawaited(speech.pause());
+        }
+      case AppLifecycleState.resumed:
+        if (_lifecyclePausedListening) {
+          _lifecyclePausedListening = false;
+          if (ref.read(prompterProvider).isPlaying) {
+            unawaited(speech.resumeListening());
+          }
+        }
+      case AppLifecycleState.detached:
+        unawaited(speech.stop());
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    unawaited(_speechService.stop());
     SystemChrome.setPreferredOrientations([]);
     SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.manual,
@@ -328,7 +412,7 @@ class _PrompterScreenState extends ConsumerState<PrompterScreen> {
   }
 
   void _gatedKeybinding(Feature feature, Function() action) {
-    final isEnabled = ref.watch(
+    final isEnabled = ref.read(
       featuresProvider.select((s) => s.features.contains(feature)),
     );
 

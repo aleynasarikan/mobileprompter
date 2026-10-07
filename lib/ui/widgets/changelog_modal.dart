@@ -4,8 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:tief_weave/markdown.dart';
 
-const _fallbackChangelogDir = 'en-US';
-
 class _ChangelogEntry {
   final Version version;
   final String content;
@@ -13,29 +11,17 @@ class _ChangelogEntry {
   _ChangelogEntry(this.version, this.content);
 }
 
-Future<List<_ChangelogEntry>> _loadChangelogs(Locale locale) async {
+Future<List<_ChangelogEntry>> _loadChangelogs(Locale _) async {
   final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
   final allAssets = manifest.listAssets();
 
-  final localeString = locale.toString().split("_").join("-");
-
-  List<String> paths = allAssets
+  final paths = allAssets
       .where(
         (a) =>
-            a.startsWith('assets/changelogs/$localeString/') &&
+            a.startsWith('assets/changelogs/product/') &&
             a.endsWith('.md'),
       )
       .toList();
-
-  if (paths.isEmpty && localeString != _fallbackChangelogDir) {
-    paths = allAssets
-        .where(
-          (a) =>
-              a.startsWith('assets/changelogs/$_fallbackChangelogDir/') &&
-              a.endsWith('.md'),
-        )
-        .toList();
-  }
 
   final entries = <_ChangelogEntry>[];
   for (final path in paths) {

@@ -49,4 +49,10 @@ app.*.map.json
 /screenshots/
 
 keys/
+*.jks
+*.keystore
+key.properties
+*.p12
+*.mobileprovision
+.env
 nohup.out

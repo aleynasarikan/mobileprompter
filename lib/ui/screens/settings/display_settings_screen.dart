@@ -1,12 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:tiefprompt/ui/widgets/safe_scaffold.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tiefprompt/core/constants.dart';
-import 'package:tiefprompt/core/control_buttons.dart';
-import 'package:tiefprompt/providers/settings_provider.dart';
-import 'package:tiefprompt/ui/widgets/app_settings.dart';
-import 'package:tiefprompt/ui/widgets/async_settings_builder.dart';
+import 'package:cueline/core/constants.dart';
+import 'package:cueline/core/control_buttons.dart';
+import 'package:cueline/providers/settings_provider.dart';
+import 'package:cueline/ui/widgets/app_settings.dart';
+import 'package:cueline/ui/widgets/async_settings_builder.dart';
+import 'package:cueline/ui/widgets/settings_group.dart';
 
 class DisplaySettingsScreen extends ConsumerWidget {
   const DisplaySettingsScreen({super.key});
@@ -21,12 +21,12 @@ class DisplaySettingsScreen extends ConsumerWidget {
       builder: (ref, value) {
         final prompterConfig = value.config;
 
-        return SafeScaffold(
-          appBar: AppBar(
-            title: Text(context.tr("SettingsScreen.DisplaySettings")),
-          ),
-          body: ListView(
-            children: [
+        return SettingsListScaffold(
+          title: context.tr("SettingsScreen.DisplaySettings"),
+          children: [
+            SettingsGroup(
+              title: context.tr("SettingsScreen.Section_Prompter"),
+              children: [
               NumberAppSetting(
                 key: const Key(
                   "DisplaySettingsScreen.NumberAppSetting_ScrollSpeed",
@@ -261,8 +261,9 @@ class DisplaySettingsScreen extends ConsumerWidget {
                     .read(settingsProvider.notifier)
                     .setPrompterTextColor(updatedValue),
               ),
-            ],
-          ),
+              ],
+            ),
+          ],
         );
       },
     );

@@ -1,22 +1,22 @@
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:tiefprompt/core/disabled_feature_screen_state.dart';
-import 'package:tiefprompt/providers/feature_provider.dart';
-import 'package:tiefprompt/providers/theme_provider.dart';
-import 'package:tiefprompt/ui/screens/help_request_screen.dart';
-import 'package:tiefprompt/ui/screens/home_screen.dart';
-import 'package:tiefprompt/ui/screens/open_file_screen.dart';
-import 'package:tiefprompt/ui/screens/prompter_screen.dart';
-import 'package:tiefprompt/ui/screens/log_viewer_screen.dart';
-import 'package:tiefprompt/ui/screens/settings/display_settings_screen.dart';
-import 'package:tiefprompt/ui/screens/settings/font_settings_screen.dart';
-import 'package:tiefprompt/ui/screens/settings/keybindings_settings_screen.dart';
-import 'package:tiefprompt/ui/screens/settings/settings_restore_screen.dart';
-import 'package:tiefprompt/ui/screens/settings/settings_screen.dart';
-import 'package:tiefprompt/ui/screens/settings/text_settings_screen.dart';
-import 'package:tiefprompt/ui/screens/speech_debug_screen.dart';
-import 'package:tiefprompt/ui/widgets/karaoke_text.dart';
-import 'package:tiefprompt/ui/widgets/prompter_theme_scope.dart';
+import 'package:cueline/core/debug_flags.dart';
+import 'package:cueline/core/disabled_feature_screen_state.dart';
+import 'package:cueline/providers/feature_provider.dart';
+import 'package:cueline/providers/theme_provider.dart';
+import 'package:cueline/ui/screens/about_screen.dart';
+import 'package:cueline/ui/screens/home_screen.dart';
+import 'package:cueline/ui/screens/open_file_screen.dart';
+import 'package:cueline/ui/screens/prompter_screen.dart';
+import 'package:cueline/ui/screens/log_viewer_screen.dart';
+import 'package:cueline/ui/screens/settings/display_settings_screen.dart';
+import 'package:cueline/ui/screens/settings/font_settings_screen.dart';
+import 'package:cueline/ui/screens/settings/keybindings_settings_screen.dart';
+import 'package:cueline/ui/screens/settings/settings_restore_screen.dart';
+import 'package:cueline/ui/screens/settings/settings_screen.dart';
+import 'package:cueline/ui/screens/settings/text_settings_screen.dart';
+import 'package:cueline/ui/screens/speech_debug_screen.dart';
+import 'package:cueline/ui/widgets/prompter_theme_scope.dart';
 
 part 'router_provider.g.dart';
 
@@ -78,10 +78,18 @@ class TiefPromptRouter extends _$TiefPromptRouter {
           ],
         ),
         GoRoute(
-          path: '/helprequest',
-          builder: (context, state) => const HelpRequestScreen(),
+          path: '/about',
+          builder: (context, state) => const AboutScreen(),
         ),
-        if (kKaraokeDebugMode)
+        GoRoute(
+          path: '/privacy',
+          builder: (context, state) => const PrivacyScreen(),
+        ),
+        GoRoute(
+          path: '/helprequest',
+          builder: (context, state) => const PrivacyScreen(),
+        ),
+        if (kKaraokeDebugTools)
           GoRoute(
             path: '/speech_debug',
             builder: (context, state) => const SpeechDebugScreen(),

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tiefprompt/models/keybinding.dart';
-import 'package:tiefprompt/providers/keybinding_provider.dart';
-import 'package:tiefprompt/ui/screens/settings/keybindings_settings_screen.dart';
+import 'package:cueline/models/keybinding.dart';
+import 'package:cueline/providers/keybinding_provider.dart';
+import 'package:cueline/ui/screens/settings/keybindings_settings_screen.dart';
 import 'package:tief_screen/tief_screen.dart';
 import 'package:tief_test_harness/tief_test_harness.dart';
 

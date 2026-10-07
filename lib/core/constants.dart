@@ -2,8 +2,8 @@ import 'dart:ui';
 
 import 'package:flutter/services.dart';
 import 'package:talker_riverpod_logger/talker_riverpod_logger.dart';
-import 'package:tiefprompt/core/fonts.dart';
-import 'package:tiefprompt/models/keybinding.dart';
+import 'package:cueline/core/fonts.dart';
+import 'package:cueline/models/keybinding.dart';
 
 const double kPrompterMinSpeed = 0.1;
 const double kPrompterMaxSpeed = 20.0;
@@ -14,27 +14,27 @@ const double kPrompterMaxFontSize = 420.0;
 const double kPrompterMinSideMargin = 0.0;
 const double kPrompterMaxSideMargin = 99.0;
 
-const String kRepoUrl = "https://github.com/Tiefseetauchner/tiefprompt";
-const String kWeblateUrl = "https://hosted.weblate.org/projects/tiefprompt/";
-const String kPrivacyPolicyUrl = "https://tiefprompt.com/policies/privacy/en/";
-const String kLukeChriswalkerUrl = "https://www.lukechriswalker.at";
-const String kDonationUrl = "https://tiefprompt.com/donate";
+const String kAppName = 'CueLine';
 
 const String kNewScriptName = "New Script";
 
-const Color kBrandTeal = Color(0xFF1FB6B6);
-const Color kBrandAbyss = Color(0xFF0A1822);
-const Color kBrandAbyssSurface = Color(0xFF10222E);
-const Color kBrandAbyssSurfaceAlt = Color(0xFF0D1D27);
-const Color kBrandBorderDark = Color(0xFF1D3543);
-const Color kBrandDarkText = Color(0xFFD6E4E8);
+const Color kBrandAccent = Color(0xFFE8B44C);
 
-const Color kBrandLightBackground = Color(0xFFF4F8F9);
+/// Alias kept so persisted settings defaults (`@Default(kBrandTeal)`) pick up
+/// the CueLine accent without regenerating Freezed output.
+const Color kBrandTeal = kBrandAccent;
+const Color kBrandAbyss = Color(0xFF0B0C0F);
+const Color kBrandAbyssSurface = Color(0xFF15171C);
+const Color kBrandAbyssSurfaceAlt = Color(0xFF1C1F26);
+const Color kBrandBorderDark = Color(0xFF2A2E37);
+const Color kBrandDarkText = Color(0xFFF4F1EA);
+
+const Color kBrandLightBackground = Color(0xFFF6F4EF);
 const Color kBrandLightSurface = Color(0xFFFFFFFF);
-const Color kBrandBorderLight = Color(0xFFD3E0E4);
-const Color kBrandLightText = Color(0xFF0A1822);
+const Color kBrandBorderLight = Color(0xFFE2DDD3);
+const Color kBrandLightText = Color(0xFF14161A);
 
-const double kBrandRadius = 14.0;
+const double kBrandRadius = 12.0;
 
 const TalkerRiverpodLoggerSettings kTalkerRiverpodObserverSettings =
     TalkerRiverpodLoggerSettings(
@@ -158,6 +158,7 @@ final List<TiefPromptFontsFile> kAvailableFonts = [
 
 const kSupportedLocales = [
   ("English", Locale("en", "US")),
+  ("Türkçe", Locale("tr", "TR")),
   ("简体中文", Locale("zh", "CN")),
   ("Deutsch", Locale("de", "DE")),
   ("Pirate English", ExtendedLocale("en", "pirate")),
@@ -255,8 +256,6 @@ const kFreeFeatures = [
   Feature.showHelpRequest,
   Feature.ephemeralScript,
 ];
-
-const kProId = "io.github.tiefseetauchner.tiefprompt.pro";
 
 final KeybindingMap kDefaultKeybindings = KeybindingMap(
   keybindings: List.from([

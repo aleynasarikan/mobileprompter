@@ -1,20 +1,21 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tiefprompt/core/constants.dart';
-import 'package:tiefprompt/core/control_buttons.dart';
-import 'package:tiefprompt/core/disabled_feature_screen_state.dart';
-import 'package:tiefprompt/core/fonts.dart';
-import 'package:tiefprompt/providers/combining_provider.dart';
-import 'package:tiefprompt/providers/feature_provider.dart';
-import 'package:tiefprompt/providers/fonts_provider.dart';
-import 'package:tiefprompt/providers/prompter_config.dart';
-import 'package:tiefprompt/providers/prompter_provider.dart';
-import 'package:tiefprompt/providers/settings_provider.dart';
-import 'package:tiefprompt/providers/theme_provider.dart';
-import 'package:tiefprompt/ui/screens/reset_settings_screen.dart';
+import 'package:cueline/core/constants.dart';
+import 'package:cueline/core/control_buttons.dart';
+import 'package:cueline/core/disabled_feature_screen_state.dart';
+import 'package:cueline/core/fonts.dart';
+import 'package:cueline/providers/combining_provider.dart';
+import 'package:cueline/providers/feature_provider.dart';
+import 'package:cueline/providers/fonts_provider.dart';
+import 'package:cueline/providers/prompter_config.dart';
+import 'package:cueline/providers/prompter_provider.dart';
+import 'package:cueline/providers/settings_provider.dart';
+import 'package:cueline/providers/speech_recognition_provider.dart';
+import 'package:cueline/providers/theme_provider.dart';
+import 'package:cueline/ui/screens/reset_settings_screen.dart';
+import 'package:cueline/ui/theme/cueline_tokens.dart';
 
 class _BoolToggle extends Notifier<bool> {
   _BoolToggle(this._initial);
@@ -32,114 +33,24 @@ final displaySettingsVisibleProvider = NotifierProvider<_BoolToggle, bool>(
 );
 
 /// Height of the portrait bottom bar above the system navigation inset.
-const double kPortraitBottomBarBodyHeight = 48;
+const double kPortraitBottomBarBodyHeight = 56;
 
 class PrompterBottomBar extends ConsumerWidget {
   const PrompterBottomBar({super.key});
 
-  List<Widget> _getWidgetButtons(BuildContext context, WidgetRef ref) {
-    return [
-      _ButtonGroup(
-        leadingWidth: 50,
-        children: [
-          IconButton(
-            icon: Icon(Icons.save),
-            tooltip: context.tr("PrompterScreen.IconButton_Save"),
-            onPressed: () => ref
-                .read(settingsProvider.notifier)
-                .applySettingsFromPrompter(ref.read(prompterProvider)),
-          ),
-        ],
-      ),
-      _ButtonGroup(
-        children: [
-          _FeatureGatedIconButton(
-            feature: Feature.displaySettings,
-            displayText: context.tr(
-              "PrompterScreen.IconButton_DisplaySettings",
-            ),
-            icon: Icon(Icons.display_settings),
-            tooltip: context.tr("PrompterScreen.IconButton_DisplaySettings"),
-            onPressed: () =>
-                ref.read(displaySettingsVisibleProvider.notifier).toggle(),
-          ),
-        ],
-      ),
-      _ButtonGroup(
-        children: [
-          _FeatureGatedIconButton(
-            feature: Feature.scrollSpeed,
-            displayText: context.tr("PrompterScreen.IconButton_DecreaseSpeed"),
-            icon: Icon(Icons.remove),
-            tooltip: context.tr("PrompterScreen.IconButton_DecreaseSpeed"),
-            onPressed: () =>
-                ref.read(prompterProvider.notifier).decreaseSpeed(.1),
-          ),
-          _FeatureGatedIconButton(
-            feature: Feature.playPause,
-            displayText: context.tr(
-              "PrompterScreen.IconButton_TogglePlayPause",
-            ),
-            icon: Icon(
-              ref.watch(prompterProvider).isPlaying
-                  ? Icons.pause
-                  : Icons.play_arrow,
-            ),
-            tooltip: context.tr("PrompterScreen.IconButton_TogglePlayPause"),
-            onPressed: () =>
-                ref.read(prompterProvider.notifier).togglePlayPause(),
-          ),
-          _FeatureGatedIconButton(
-            feature: Feature.scrollSpeed,
-            displayText: context.tr("PrompterScreen.IconButton_IncreaseSpeed"),
-            icon: Icon(Icons.add),
-            tooltip: context.tr("PrompterScreen.IconButton_IncreaseSpeed"),
-            onPressed: () =>
-                ref.read(prompterProvider.notifier).increaseSpeed(.1),
-          ),
-        ],
-      ),
-      _ButtonGroup(
-        children: [
-          _FeatureGatedIconButton(
-            feature: Feature.textSettings,
-            displayText: context.tr("PrompterScreen.IconButton_TextFormat"),
-            icon: Icon(Icons.text_format),
-            tooltip: context.tr("PrompterScreen.IconButton_TextFormat"),
-            onPressed: () =>
-                ref.read(fontSettingsVisibleProvider.notifier).toggle(),
-          ),
-        ],
-      ),
-      _ButtonGroup(
-        trailingWidth: 50,
-        children: [
-          IconButton(
-            icon: Icon(Icons.settings),
-            tooltip: context.tr("PrompterScreen.IconButton_Settings"),
-            onPressed: () => context.push("/settings"),
-          ),
-        ],
-      ),
-    ];
+  IconData _playIcon(WidgetRef ref) {
+    final playing = ref.watch(prompterProvider.select((p) => p.isPlaying));
+    if (!playing) return Icons.play_arrow_rounded;
+    final listening = ref.watch(
+      speechRecognitionProvider.select((s) => s.isListening),
+    );
+    return listening ? Icons.stop_rounded : Icons.mic_none;
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final (:speed, :fontSize) = ref.watch(
-      prompterProvider.select(
-        (p) => (speed: p.config.scrollSpeed, fontSize: p.config.fontSize),
-      ),
-    );
     final fontSettingsVisible = ref.watch(fontSettingsVisibleProvider);
     final displaySettingsVisible = ref.watch(displaySettingsVisibleProvider);
-    final displayedFontSize = prompterDisplayFontSize(
-      fontSize,
-      MediaQuery.orientationOf(context),
-    );
-    final onSurface = Theme.of(context).colorScheme.onSurface;
-    final portrait =
-        MediaQuery.orientationOf(context) == Orientation.portrait;
 
     return Stack(
       children: [
@@ -147,50 +58,7 @@ class PrompterBottomBar extends ConsumerWidget {
           bottom: 0,
           left: 0,
           right: 0,
-          child: portrait
-              ? _portraitChrome(
-                  context,
-                  ref,
-                  speed: speed,
-                  displayedFontSize: displayedFontSize,
-                  onSurface: onSurface,
-                )
-              : Container(
-                  decoration: BoxDecoration(color: onSurface.withAlpha(120)),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12.0,
-                    horizontal: 16.0,
-                  ),
-                  child: SafeArea(
-                    top: false,
-                    child: Stack(
-                      children: [
-                        _controlsRow(context, ref, compact: false),
-                        Positioned(
-                          right: 0,
-                          child: Column(
-                            children: [
-                              Text(
-                                context.tr(
-                                  "PrompterScreen.speed",
-                                  args: [speed.toStringAsFixed(1)],
-                                ),
-                                style: TextStyle(color: onSurface),
-                              ),
-                              Text(
-                                context.tr(
-                                  "PrompterScreen.fontsize",
-                                  args: [displayedFontSize.toStringAsFixed(1)],
-                                ),
-                                style: TextStyle(color: onSurface),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+          child: _chrome(context, ref),
         ),
         if (fontSettingsVisible) SafeArea(child: _FontSettingsDialog()),
         if (displaySettingsVisible) SafeArea(child: _DisplaySettingsDialog()),
@@ -198,102 +66,176 @@ class PrompterBottomBar extends ConsumerWidget {
     );
   }
 
-  Widget _portraitChrome(
-    BuildContext context,
-    WidgetRef ref, {
-    required double speed,
-    required double displayedFontSize,
-    required Color onSurface,
-  }) {
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
-    return Container(
-      height: bottomInset + kPortraitBottomBarBodyHeight,
-      clipBehavior: Clip.hardEdge,
-      decoration: BoxDecoration(color: onSurface.withAlpha(120)),
-      padding: EdgeInsets.only(left: 4, right: 8, bottom: bottomInset),
-      child: Row(
-        children: [
-          Expanded(child: _controlsRow(context, ref, compact: true)),
-          const SizedBox(width: 8),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
+  Widget _chrome(BuildContext context, WidgetRef ref) {
+    final tokens = CueLineTheme.of(context);
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    final playing = ref.watch(prompterProvider.select((p) => p.isPlaying));
+    final primary = Theme.of(context).colorScheme.primary;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
+    return ColoredBox(
+      color: tokens.chromeFill,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: CueLineTokens.spaceSm,
+          right: CueLineTokens.spaceSm,
+          bottom: bottomInset,
+        ),
+        child: SizedBox(
+          height: kPortraitBottomBarBodyHeight,
+          child: Row(
             children: [
-              Text(
-                context.tr(
-                  "PrompterScreen.speed",
-                  args: [speed.toStringAsFixed(1)],
+              _FeatureGatedIconButton(
+                feature: Feature.textSettings,
+                displayText: context.tr(
+                  "PrompterScreen.IconButton_TextFormat",
                 ),
-                style: TextStyle(color: onSurface, fontSize: 11),
+                icon: Icon(Icons.text_fields, color: onSurface),
+                tooltip: context.tr("PrompterScreen.IconButton_TextFormat"),
+                onPressed: () =>
+                    ref.read(fontSettingsVisibleProvider.notifier).toggle(),
               ),
-              Text(
-                context.tr(
-                  "PrompterScreen.fontsize",
-                  args: [displayedFontSize.toStringAsFixed(1)],
+              const Spacer(),
+              Semantics(
+                button: true,
+                label: context.tr("PrompterScreen.IconButton_TogglePlayPause"),
+                child: IconButton(
+                  iconSize: CueLineTokens.iconLg,
+                  style: IconButton.styleFrom(
+                    backgroundColor: playing
+                        ? primary.withValues(alpha: 0.18)
+                        : primary,
+                    foregroundColor: playing
+                        ? primary
+                        : Theme.of(context).colorScheme.onPrimary,
+                    minimumSize: const Size(
+                      CueLineTokens.minTouch,
+                      CueLineTokens.minTouch,
+                    ),
+                    maximumSize: const Size(
+                      CueLineTokens.minTouch + 4,
+                      CueLineTokens.minTouch + 4,
+                    ),
+                  ),
+                  tooltip: context.tr(
+                    "PrompterScreen.IconButton_TogglePlayPause",
+                  ),
+                  onPressed: () {
+                    final enabled = ref.read(
+                      featuresProvider.select(
+                        (s) => s.features.contains(Feature.playPause),
+                      ),
+                    );
+                    if (enabled) {
+                      ref.read(prompterProvider.notifier).togglePlayPause();
+                    }
+                  },
+                  icon: Icon(_playIcon(ref)),
                 ),
-                style: TextStyle(color: onSurface, fontSize: 11),
+              ),
+              const Spacer(),
+              _FeatureGatedIconButton(
+                feature: Feature.displaySettings,
+                displayText: context.tr(
+                  "PrompterScreen.IconButton_DisplaySettings",
+                ),
+                icon: Icon(Icons.tune, color: onSurface),
+                tooltip: context.tr(
+                  "PrompterScreen.IconButton_DisplaySettings",
+                ),
+                onPressed: () => ref
+                    .read(displaySettingsVisibleProvider.notifier)
+                    .toggle(),
+              ),
+              IconButton(
+                icon: Icon(Icons.more_horiz, color: onSurface),
+                tooltip: context.tr("PrompterScreen.IconButton_Settings"),
+                onPressed: () => _showMoreSheet(context, ref),
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _controlsRow(
-    BuildContext context,
-    WidgetRef ref, {
-    required bool compact,
-  }) {
-    final row = IconTheme.merge(
-      data: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
-      child: Row(
-        mainAxisSize: MainAxisSize.max,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: _getWidgetButtons(context, ref),
-      ),
-    );
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: compact
-          ? IconButtonTheme(
-              data: IconButtonThemeData(
-                style: IconButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: const Size(40, 40),
-                  fixedSize: const Size(40, 40),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+  void _showMoreSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) {
+        return Consumer(
+          builder: (context, ref, _) {
+            final speed = ref.watch(
+              prompterProvider.select((p) => p.config.scrollSpeed),
+            );
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  CueLineTokens.spaceMd,
+                  CueLineTokens.spaceSm,
+                  CueLineTokens.spaceMd,
+                  CueLineTokens.spaceLg,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      title: Text(
+                        context.tr(
+                          "PrompterScreen.speed",
+                          args: [speed.toStringAsFixed(1)],
+                        ),
+                      ),
+                      leading: IconButton(
+                        icon: const Icon(Icons.remove),
+                        tooltip: context.tr(
+                          "PrompterScreen.IconButton_DecreaseSpeed",
+                        ),
+                        onPressed: () => ref
+                            .read(prompterProvider.notifier)
+                            .decreaseSpeed(.1),
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.add),
+                        tooltip: context.tr(
+                          "PrompterScreen.IconButton_IncreaseSpeed",
+                        ),
+                        onPressed: () => ref
+                            .read(prompterProvider.notifier)
+                            .increaseSpeed(.1),
+                      ),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.save_outlined),
+                      title: Text(
+                        context.tr("PrompterScreen.IconButton_Save"),
+                      ),
+                      onTap: () {
+                        ref
+                            .read(settingsProvider.notifier)
+                            .applySettingsFromPrompter(
+                              ref.read(prompterProvider),
+                            );
+                        Navigator.pop(sheetContext);
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.settings_outlined),
+                      title: Text(
+                        context.tr("PrompterScreen.IconButton_Settings"),
+                      ),
+                      onTap: () {
+                        Navigator.pop(sheetContext);
+                        context.push("/settings");
+                      },
+                    ),
+                  ],
                 ),
               ),
-              child: row,
-            )
-          : row,
-    );
-  }
-}
-
-class _ButtonGroup extends StatelessWidget {
-  const _ButtonGroup({
-    this.leadingWidth = 15,
-    this.trailingWidth = 15,
-    required this.children,
-  });
-
-  final double leadingWidth;
-  final double trailingWidth;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        VerticalDivider(width: leadingWidth),
-        ...children,
-        VerticalDivider(width: trailingWidth),
-      ],
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -452,9 +394,12 @@ class _FontSettingsDialog extends ConsumerWidget {
         appBar: AppBar(
           title: Text(context.tr("SettingsScreen.KeybindingsSettings.Title")),
         ),
-        body: SpinKitRing(
-          color:
-              ref.read(settingsProvider).value?.appPrimaryColor ?? kBrandTeal,
+        body: Center(
+          child: CircularProgressIndicator(
+            color:
+                ref.read(settingsProvider).value?.appPrimaryColor ??
+                kBrandAccent,
+          ),
         ),
       ),
       _ => const ResetSettingsView(),
@@ -777,9 +722,12 @@ class _DisplaySettingsDialog extends ConsumerWidget {
         appBar: AppBar(
           title: Text(context.tr("SettingsScreen.KeybindingsSettings.Title")),
         ),
-        body: SpinKitRing(
-          color:
-              ref.read(settingsProvider).value?.appPrimaryColor ?? kBrandTeal,
+        body: Center(
+          child: CircularProgressIndicator(
+            color:
+                ref.read(settingsProvider).value?.appPrimaryColor ??
+                kBrandAccent,
+          ),
         ),
       ),
       _ => const ResetSettingsView(),

@@ -1,0 +1,19 @@
+---
+description: Mobil teleprompter projesinin bağlamı, ilerleme durumu ve çalışma kuralları
+alwaysApply: true
+---
+
+# Proje bağlamı
+
+Bu repo, TiefPrompt (Flutter) tabanlı, Türkçe konuşmayı takip eden bir mobil teleprompter'a dönüştürülüyor (önce Android MVP).
+
+Yeni bir göreve başlamadan önce mutlaka oku:
+- `docs/progress.md` — tamamlanan aşamalar, sıradaki adımlar, bilinen tuzaklar
+- `docs/architecture_analysis.md` — mimari analiz
+
+Kurallar:
+- Kullanıcıyla Türkçe konuş.
+- Her aşamayı dar kapsamda tut; istenmeyen işlere (UI yenileme, applicationId, iOS, yeni dependency) dokunma.
+- `tief_weave` paketini değiştirme.
+- `build_runner`'ı `--build-filter` ile çalıştırma (diğer üretilmiş dosyaları siler).
+- Bir aşama bitince `docs/progress.md` dosyasını güncelle.

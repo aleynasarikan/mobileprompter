@@ -1,12 +1,19 @@
 {
-  "title": "TiefPrompt",
+  "title": "CueLine",
   "empty_title": "Unnamed Script",
-  "copyright": "Copyright © 2025 Lena Tauchner\nAll rights reserved.\n\nThis project is licensed under the MIT License. See the LICENSE file for details.\n",
-  "credits": "Thanks to the following contributors for providing translations for the software.\n Chinese: @TaoEngine\n Russian: @Xapitonov\n Arabic: @shadigaafar",
+  "copyright": "CueLine is based on TiefPrompt by Lena Tauchner, licensed under the MIT License.\nOriginal copyright © Lena Tauchner. See LICENSE for details.\n",
+  "credits": "Thanks to the following contributors for providing translations for the original software.\n Chinese: @TaoEngine\n Russian: @Xapitonov\n Arabic: @shadigaafar",
   "ProFeatureDisabled": "This function is only available in the pro version.",
   "AboutDialog": {
-    "Text_PrivacyText": "This application does not collect any personal data. No data is shared with third parties as far as I know. Read more about our privacy policy.",
-    "ElevatedButton_Privacy": "Privacy Policy"
+    "Text_PrivacyText": "CueLine uses the microphone and the on-device speech recognizer only while playback is running. The app does not keep recordings.",
+    "Text_PrivacyBody": "CueLine is a local teleprompter. Scripts you type or open are stored on this device.\n\nMicrophone access is used only while you tap Play, so the app can follow the words you speak and scroll the script. When you stop playback or leave the teleprompter, listening stops.\n\nSpeech recognition is provided by the operating system (for example Google speech services on Android, or Apple speech recognition on iOS). CueLine does not send audio to its own servers. The system recognizer may use a network connection when an offline language pack is not installed.\n\nCueLine does not create user accounts and does not include advertising or analytics SDKs of its own.",
+    "ElevatedButton_Privacy": "Privacy"
+  },
+  "AboutScreen": {
+    "title": "About",
+    "tagline": "A speech-following teleprompter for rehearsals and recording.",
+    "version": "Version {}",
+    "licenses": "Licenses"
   },
   "ChangelogModal": {
     "title": "What's New",
@@ -14,12 +21,15 @@
   },
   "HomeScreen": {
     "TitleField_heading": "Script Title",
-    "TitleField_hintText": "Enter script title",
-    "TextField_heading": "Script Content",
-    "TextField_hintText": "Enter script content",
-    "ElevatedButton_Start": "Start Teleprompter",
-    "ElevatedButton_Select": "Select Script from Device",
-    "ElevatedButton_Save": "Save Script",
+    "TitleField_hintText": "Optional title",
+    "TextField_heading": "Script",
+    "TextField_hintText": "Paste or type your script",
+    "Intro": "Paste a script, start a rehearsal, and speak. CueLine follows your words.",
+    "EmptyScript": "Add some text before starting the teleprompter.",
+    "UnsavedHint": "Unsaved changes",
+    "ElevatedButton_Start": "Start rehearsal",
+    "ElevatedButton_Select": "Open",
+    "ElevatedButton_Save": "Save",
     "IconButton_Settings": "Settings",
     "IconButton_SourceCode": "View source code",
     "IconButton_About": "About",
@@ -44,20 +54,28 @@
     "FossVersion": "Free and Open Source",
     "FossVersion_Explanation": "We are a free and open source project. This means that you can use this app for free - for ever. All features in this app are free to you and you may use them without any restrictions. However, this is a community project which took quite a lot of work. So if you like this app and would like to see it supported into the future, please consider donating. You can find current links at the Source Code Repository.",
     "FreeVersion": "Free Version",
-    "FreeVersion_Explanation": "We are a free and open source project. Sadly, maintaining TiefPrompt takes a lot of time - and frankly, money. Between development, design, and the cost of distribution (hello, Apple Developer fees), it's become a bit of a time-and-money sink for me. To keep things sustainable, I've chosen a freemium model: the app is free to use, but some features are only available in the Pro version.\n\nIf you can't or don't want to pay, you're still totally welcome to use the app or build it yourself from source - no hard feelings.\n\nI wish it weren't necessary, but I hope you understand and still find real value in this app.",
+    "FreeVersion_Explanation": "We are a free and open source project. Sadly, maintaining CueLine takes a lot of time - and frankly, money. Between development, design, and the cost of distribution (hello, Apple Developer fees), it's become a bit of a time-and-money sink for me. To keep things sustainable, I've chosen a freemium model: the app is free to use, but some features are only available in the Pro version.\n\nIf you can't or don't want to pay, you're still totally welcome to use the app or build it yourself from source - no hard feelings.\n\nI wish it weren't necessary, but I hope you understand and still find real value in this app.",
     "FreeVersion_BuyPro": "Buy Pro",
-    "PaidVersion": "TiefPrompt Pro",
-    "PaidVersion_Explanation": "Thank you for purchasing TiefPrompt Pro! Your support means the world. You're not just unlocking extra features - you're helping this project stay alive, maintained, and hopefully even better with time. This app is a labour of love, and your contribution helps cover hosting, development, testing devices, and way too much coffee.\n\nSeriously, thank you for making this possible.",
+    "PaidVersion": "CueLine Pro",
+    "PaidVersion_Explanation": "Thank you for purchasing CueLine Pro! Your support means the world. You're not just unlocking extra features - you're helping this project stay alive, maintained, and hopefully even better with time. This app is a labour of love, and your contribution helps cover hosting, development, testing devices, and way too much coffee.\n\nSeriously, thank you for making this possible.",
     "Understood": "Understood"
   },
   "SettingsScreen": {
     "title": "Settings",
+    "Section_Appearance": "Appearance",
+    "Section_Prompter": "Prompter",
+    "Section_About": "About",
+    "ThemeMode": {
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    },
     "NumberAppSetting": {
       "Value": "Enter Value",
       "ElevatedButton_Save": "Save"
     },
-    "DropdownAppSetting_DefaultLanguage": "Default Language",
-    "DropdownAppSetting_Theme": "App Theme",
+    "DropdownAppSetting_DefaultLanguage": "Language",
+    "DropdownAppSetting_Theme": "Theme",
     "NumberAppSetting_DefaultScrollSpeed": "Default Scroll Speed",
     "NumberAppSetting_DefaultScrollSpeed_Unit": "lines/sec",
     "NumberAppSetting_DefaultFontSize": "Default Font Size",
@@ -86,7 +104,7 @@
       "bottom": "Bottom Side"
     },
     "ShowHelpRequest": "Show Help Request Again",
-    "ShowChangelog": "Show Changelog",
+    "ShowChangelog": "What's new",
     "ViewLogs": "View Logs",
     "NumberAppSetting_ReadingIndicatorBoxes": "Height of Reading Indicator Boxes",
     "NumberAppSetting_ReadingIndicatorBoxes_Unit": "%",
@@ -100,7 +118,7 @@
     "NumberAppSetting_SideMargin_Unit": "%",
     "NumberAppSetting_CountdownTimer": "Countdown Timer",
     "NumberAppSetting_CountdownTimer_Unit": "sec",
-    "ColorAppSetting_AppPrimaryColor": "Primary Application Color",
+    "ColorAppSetting_AppPrimaryColor": "Accent color",
     "ColorAppSetting_PrompterBackgroundColor": "Prompter Background Color",
     "ColorAppSetting_PrompterTextColor": "Prompter Text Color",
     "DisplaySettings": "Display Settings",
@@ -112,7 +130,7 @@
     "RestorePurchases": "Restore Purchases",
     "RestorePurchases_Snackbar": "Purchases were restored.",
     "KeybindingsSettings": {
-      "Title": "Keybindings Settings",
+      "Title": "Keyboard shortcuts",
       "ChangeBindings": "Change Bindings",
       "AddBinding": "Add Binding",
       "CaptureBindingTitle": "Press a key combination",
@@ -136,7 +154,7 @@
       "saveSettingsFromPrompter": "Save Settings from Prompter"
     },
     "SettingsRestore": {
-      "Title": "Save and Restore Settings",
+      "Title": "Setting profiles",
       "Save": "Save Current Settings",
       "Import": "Import Settings from File",
       "LoadError": "There was a problem loading saved settings.",
@@ -170,7 +188,7 @@
         "Content": "Please choose a file to import the settings profile from. Note that this will be added as a new profile and not override current settings.",
         "Cancel": "Cancel",
         "Import": "Choose File",
-        "InvalidVersion": "Invalid Schema Version provided. Please use a settings schema from this TiefPrompt version."
+        "InvalidVersion": "Invalid Schema Version provided. Please use a settings schema from this CueLine version."
       },
       "SaveDialog": {
         "Title": "Save Settings Profile",
@@ -217,11 +235,23 @@
   },
   "PrompterScreen": {
     "speed": "{}x",
+    "Speech": {
+      "listening": "Listening",
+      "starting": "Starting microphone…",
+      "paused": "Paused",
+      "trackingPaused": "Tracking paused",
+      "retrying": "Speech recognition interrupted. Retrying…",
+      "permissionDenied": "Microphone permission is required to follow speech.",
+      "unavailable": "Speech recognition is unavailable. Auto-scroll is used instead.",
+      "microphoneBusy": "The microphone is in use by another app.",
+      "emptyScript": "Add some text before starting the teleprompter."
+    },
+    "TheEnd": "The End",
     "fontsize": "F: {}",
     "IconButton_Save": "Save Prompter Settings",
     "IconButton_DisplaySettings": "Display Settings",
     "IconButton_DecreaseSpeed": "Decrease Speed",
-    "IconButton_TogglePlayPause": "Toggle Play & Pause",
+    "IconButton_TogglePlayPause": "Start or stop speech following",
     "IconButton_IncreaseSpeed": "Increase Speed",
     "IconButton_TextFormat": "Font Settings",
     "IconButton_Settings": "Settings",
@@ -256,8 +286,8 @@
   },
   "HelpRequestScreen": {
     "Title": "Help us!",
-    "Abstract": "TL;DR: TiefPrompt is a community created and funded project. Being FOSS means everyone can contribute - but alas, there are costs to creating and publishing an app. Aside our time, the Apple tax is real. Contributing to the project really helps. I elaborate below, but check out the GitHub if you want to help out.",
-    "ElaborateExplanation": "You reading on already means you are interested in our project, so let me catch you up. TiefPrompt is a teleprompter application without ads, tracking, or any such monetary means most apps resort to. That means we're fully reliant on the purchases of TiefPrompt Pro, as well as donations.\n\nSince the developers sink a lot of time and money into providing this app (e.g. lawyers to write a privacy policy, Apple Tax, so on), we decided on two means of getting funding - one is, obviously, the In-App Purchases on iOS and Android. If you've downloaded this app from Google Play or the Apple App Store, you'll notice that some features are indeed restricted. That is a side effect of Apple requiring developers to own an Apple product - something we had to specifically acquire for this project - and a yearly payment for the privilege of creating an app.\n\nAdditionally, this app is free. You may be wondering how that is possible, as I had just explained how totally not free this app is, but if you look at the link above, this app is, indeed, fully open-source. You're allowed to use, modify, sell, or really do whatever with this app. And it's free as in beer if you download it from F-Droid or GitHub, or simply compile it yourself.\n\nThat's why we don't only have an In-App Purchase option, but also donation links. If you're using the app how it was initially envisioned - that is, freely - we ask of you that you consider donating. No hard feelings if you don't, we know the financial realities, but it's a way to support us.\n\nAside that, making an app obviously requires time. Developing, sorting issues, planning releases - all of this, while being fun, is a strain on the devs. So if you can't or don't want to donate or pay for the app, how about you contribute to the app!\n\nHow to contribute, you ask? Well, one way is simply giving feedback. Is there a feature missing? Is the app buggy? Simply tell us, and we'll make it better!\n\nAnother way to contribute is obviously to provide code. If you're able, we'd appreciate any help on getting Issues down, making new features and fixing bugs. We're all just humans, and your support would be a big help.\n\nLastly, there's translations. We provide this app in multiple languages, but there's always another language, a translation error, or simply a small typo to fix. You can find how to help making translations of this app better in the GitHub repo, and we really do appreciate any help on that front as well.\n\nAnd now, a personal note from the creator, because you just read through my prose and you deserve it: Thank you. Thank you for considering this app, downloading it, reading this, so on. I really do appreciate you all immensly. Seeing a project actually be used is validating and it makes me happy that I'm not alone here. So, one last time: Thank you.\n\nNow to the last thing, there's links below, click them to find out more.\n\nBest, Lena",
+    "Abstract": "TL;DR: CueLine is a community created and funded project. Being FOSS means everyone can contribute - but alas, there are costs to creating and publishing an app. Aside our time, the Apple tax is real. Contributing to the project really helps. I elaborate below, but check out the GitHub if you want to help out.",
+    "ElaborateExplanation": "You reading on already means you are interested in our project, so let me catch you up. CueLine is a teleprompter application without ads, tracking, or any such monetary means most apps resort to. That means we're fully reliant on the purchases of CueLine Pro, as well as donations.\n\nSince the developers sink a lot of time and money into providing this app (e.g. lawyers to write a privacy policy, Apple Tax, so on), we decided on two means of getting funding - one is, obviously, the In-App Purchases on iOS and Android. If you've downloaded this app from Google Play or the Apple App Store, you'll notice that some features are indeed restricted. That is a side effect of Apple requiring developers to own an Apple product - something we had to specifically acquire for this project - and a yearly payment for the privilege of creating an app.\n\nAdditionally, this app is free. You may be wondering how that is possible, as I had just explained how totally not free this app is, but if you look at the link above, this app is, indeed, fully open-source. You're allowed to use, modify, sell, or really do whatever with this app. And it's free as in beer if you download it from F-Droid or GitHub, or simply compile it yourself.\n\nThat's why we don't only have an In-App Purchase option, but also donation links. If you're using the app how it was initially envisioned - that is, freely - we ask of you that you consider donating. No hard feelings if you don't, we know the financial realities, but it's a way to support us.\n\nAside that, making an app obviously requires time. Developing, sorting issues, planning releases - all of this, while being fun, is a strain on the devs. So if you can't or don't want to donate or pay for the app, how about you contribute to the app!\n\nHow to contribute, you ask? Well, one way is simply giving feedback. Is there a feature missing? Is the app buggy? Simply tell us, and we'll make it better!\n\nAnother way to contribute is obviously to provide code. If you're able, we'd appreciate any help on getting Issues down, making new features and fixing bugs. We're all just humans, and your support would be a big help.\n\nLastly, there's translations. We provide this app in multiple languages, but there's always another language, a translation error, or simply a small typo to fix. You can find how to help making translations of this app better in the GitHub repo, and we really do appreciate any help on that front as well.\n\nAnd now, a personal note from the creator, because you just read through my prose and you deserve it: Thank you. Thank you for considering this app, downloading it, reading this, so on. I really do appreciate you all immensly. Seeing a project actually be used is validating and it makes me happy that I'm not alone here. So, one last time: Thank you.\n\nNow to the last thing, there's links below, click them to find out more.\n\nBest, Lena",
     "ReadMore": "Read more",
     "Continue": "Continue to the App"
   },
@@ -267,7 +297,7 @@
     "RestorePurchases": "Restore Purchases",
     "BuyPro": "Purchase Pro",
     "BuyRequest": {
-      "Generic": "## Considering upgrading?\n\nThis is the free version of TiefPrompt, and every Pro feature is one tap away.",
+      "Generic": "## Considering upgrading?\n\nThis is the free version of CueLine, and every Pro feature is one tap away.",
       "appLanguage": "## App Language\n\nChange the localization of the app.",
       "appTheme": "## App Theme\n\nSwitch between light, dark, and custom themes to suit your studio.",
       "primaryAppColor": "## Accent Color\n\nPersonalize the app with your own primary color.",
@@ -291,10 +321,10 @@
       "markdown": "## Markdown Formatting\n\nWrite headings, bold, italics, and underlines and see them rendered live in your script.",
       "settingsRestore": "## Save & Restore Settings\n\nSave your prompter setups as profiles and bring them back on any device.",
       "controlButtons": "## Control Buttons\n\nOn-screen controls for simpler operation.",
-      "showHelpRequest": "## Support TiefPrompt\n\nLearn how you can help keep TiefPrompt alive and growing.",
+      "showHelpRequest": "## Support CueLine\n\nLearn how you can help keep CueLine alive and growing.",
       "ephemeralScript": "## Quick Script\n\nStart prompting instantly without saving a script first.",
       "currentChapter": "## Current Chapter\n\nNever loose sight of where you are - display the current chapter at the top of the screen.",
-      "MainBlock": "Unlock this and every other Pro feature with a single one-time purchase. No subscription, yours forever.\n\nFrankly, TiefPrompt is currently, other than translations, a one person project. Your purchase funds the development, allows this app to be ad and tracking and bs free, pays for the Apple fees, *and* allows me to get *an excessive amount of camera equipment*. Thank you for reading and considering!\n\n  ~ Lena"
+      "MainBlock": "Unlock this and every other Pro feature with a single one-time purchase. No subscription, yours forever.\n\nFrankly, CueLine is currently, other than translations, a one person project. Your purchase funds the development, allows this app to be ad and tracking and bs free, pays for the Apple fees, *and* allows me to get *an excessive amount of camera equipment*. Thank you for reading and considering!\n\n  ~ Lena"
     }
   },
   "NoPurchaseAvailable": {

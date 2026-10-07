@@ -575,7 +575,7 @@
                       ".isIn(",
                       {
                         "lexeme": "KeybindingAction",
-                        "import_uri": "package:tiefprompt/models/keybinding.dart"
+                        "import_uri": "package:cueline/models/keybinding.dart"
                       },
                       ".values.map((e) => e.name))"
                     ]

@@ -1,12 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:tiefprompt/ui/widgets/safe_scaffold.dart';
-import 'package:tiefprompt/ui/widgets/async_settings_builder.dart';
+import 'package:cueline/ui/widgets/async_settings_builder.dart';
+import 'package:cueline/ui/widgets/settings_group.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tiefprompt/core/constants.dart';
-import 'package:tiefprompt/models/keybinding.dart';
-import 'package:tiefprompt/providers/keybinding_provider.dart';
-import 'package:tiefprompt/ui/widgets/app_settings.dart';
+import 'package:cueline/core/constants.dart';
+import 'package:cueline/models/keybinding.dart';
+import 'package:cueline/providers/keybinding_provider.dart';
+import 'package:cueline/ui/widgets/app_settings.dart';
 
 class KeybindingsSettingsScreen extends ConsumerWidget {
   const KeybindingsSettingsScreen({super.key});
@@ -18,12 +18,9 @@ class KeybindingsSettingsScreen extends ConsumerWidget {
     return AsyncSettingsBuilder(
       state: keybindings,
       screenTitle: context.tr("SettingsScreen.KeybindingsSettings.Title"),
-      builder: (ref, value) => SafeScaffold(
-        appBar: AppBar(
-          title: Text(context.tr("SettingsScreen.KeybindingsSettings.Title")),
-        ),
-        body: ListView(
-          children: [
+      builder: (ref, value) => SettingsListScaffold(
+        title: context.tr("SettingsScreen.KeybindingsSettings.Title"),
+        children: [
             ...KeybindingAction.values.map((b) {
               return KeybindingAppSetting(
                 key: Key("KeybindingsSettingsScreen.KeybindingAppSetting_${b.name}"),
@@ -47,7 +44,6 @@ class KeybindingsSettingsScreen extends ConsumerWidget {
               },
             ),
           ],
-        ),
       ),
     );
   }

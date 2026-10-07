@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tiefprompt/providers/current_chapter_provider.dart';
-import 'package:tiefprompt/providers/prompter_provider.dart';
+import 'package:cueline/providers/current_chapter_provider.dart';
+import 'package:cueline/providers/prompter_provider.dart';
+import 'package:cueline/ui/theme/cueline_tokens.dart';
 
 class CurrentChapterBanner extends ConsumerWidget {
   final EdgeInsets? offset;
@@ -27,30 +28,23 @@ class CurrentChapterBanner extends ConsumerWidget {
     if (chapter == null) return const SizedBox.shrink();
 
     final onSurface = Theme.of(context).colorScheme.onSurface;
-    final canvas = Theme.of(context).canvasColor;
-    final borderSide = BorderSide(color: onSurface.withAlpha(180));
+    final tokens = CueLineTheme.of(context);
 
     return Positioned(
       top: mirroredY ? null : (offset?.top ?? 0),
       bottom: mirroredY ? (offset?.top ?? 0) : null,
       left: 0,
       right: 0,
-      child: Container(
-        decoration: BoxDecoration(
-          color: canvas.withAlpha(120),
-          border: Border(
-            bottom: mirroredY ? BorderSide.none : borderSide,
-            top: mirroredY ? borderSide : BorderSide.none,
-          ),
-        ),
+      child: ColoredBox(
+        color: tokens.chromeFill,
         child: SafeArea(
           bottom: false,
           child: Padding(
             padding: EdgeInsets.symmetric(
               horizontal:
-                  16 +
+                  CueLineTokens.spaceMd +
                   (MediaQuery.of(context).size.width / 2) * (sideMargin / 100),
-              vertical: 8,
+              vertical: CueLineTokens.spaceSm,
             ),
             child: Transform.flip(
               flipX: mirroredX,
@@ -60,10 +54,9 @@ class CurrentChapterBanner extends ConsumerWidget {
                 style: TextStyle(
                   color: onSurface,
                   fontFamily: fontFamily,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                 ),
                 textAlign: alignment,
-                textScaler: TextScaler.linear(2),
                 overflow: TextOverflow.ellipsis,
               ),
             ),

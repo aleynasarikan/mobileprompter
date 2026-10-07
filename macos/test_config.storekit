@@ -5,7 +5,7 @@
       {
         "locale" : "en_US",
         "policyText" : "",
-        "policyURL" : "https://tiefprompt.com/policies/privacy/en"
+        "policyURL" : ""
       }
     ]
   },
@@ -25,7 +25,7 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "io.github.tiefseetauchner.tiefprompt.pro",
+      "productID" : "app.cueline.teleprompter.pro",
       "referenceName" : "Pro",
       "type" : "NonConsumable"
     }

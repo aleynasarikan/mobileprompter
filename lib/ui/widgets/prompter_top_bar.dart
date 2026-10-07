@@ -1,7 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tiefprompt/providers/script_provider.dart';
+import 'package:cueline/providers/script_provider.dart';
+import 'package:cueline/ui/theme/cueline_tokens.dart';
 
 /// Height of the portrait top bar below the status-bar inset.
 const double kPortraitTopBarBodyHeight = 48;
@@ -12,80 +13,54 @@ class PrompterTopBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (MediaQuery.orientationOf(context) == Orientation.portrait) {
-      return _portraitBar(context, ref);
+      return _bar(context, ref, portrait: true);
     }
-
-    final script = ref.watch(scriptProvider);
-
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        color: Theme.of(context).colorScheme.onSurface.withAlpha(120),
-        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12.0),
-        child: SafeArea(
-          bottom: false,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 12,
-            children: [
-              IconButton(
-                icon: Icon(
-                  Icons.close,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              Expanded(
-                child: Text(
-                  script.title ?? context.tr("empty_title"),
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 20,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    return _bar(context, ref, portrait: false);
   }
 
-  Widget _portraitBar(BuildContext context, WidgetRef ref) {
+  Widget _bar(BuildContext context, WidgetRef ref, {required bool portrait}) {
     final script = ref.watch(scriptProvider);
     final onSurface = Theme.of(context).colorScheme.onSurface;
-    final topInset = MediaQuery.paddingOf(context).top;
+    final tokens = CueLineTheme.of(context);
+    final topInset = MediaQuery.viewPaddingOf(context).top;
+    final title = script.title ?? context.tr("empty_title");
 
     return Positioned(
       top: 0,
       left: 0,
       right: 0,
-      child: Container(
-        height: topInset + kPortraitTopBarBodyHeight,
-        clipBehavior: Clip.hardEdge,
-        color: onSurface.withAlpha(120),
-        padding: EdgeInsets.only(top: topInset, left: 4, right: 8),
-        child: Row(
-          children: [
-            IconButton(
-              iconSize: 22,
-              padding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
-              constraints: const BoxConstraints.tightFor(width: 40, height: 40),
-              icon: Icon(Icons.close, color: onSurface),
-              onPressed: () => Navigator.of(context).pop(),
+      child: DecoratedBox(
+        decoration: BoxDecoration(color: tokens.chromeFill),
+        child: Padding(
+          padding: EdgeInsets.only(
+            top: topInset,
+            left: CueLineTokens.spaceXs,
+            right: CueLineTokens.spaceMd,
+          ),
+          child: SizedBox(
+            height: kPortraitTopBarBodyHeight,
+            child: Row(
+              children: [
+                IconButton(
+                  iconSize: CueLineTokens.iconMd,
+                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                  icon: Icon(Icons.close, color: onSurface),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                Expanded(
+                  child: Text(
+                    title,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: portrait ? 16 : 18,
+                      fontWeight: FontWeight.w500,
+                      color: onSurface,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            Expanded(
-              child: Text(
-                script.title ?? context.tr("empty_title"),
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 16, color: onSurface),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

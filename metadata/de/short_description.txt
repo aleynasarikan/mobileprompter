@@ -1,1 +1,1 @@
-Die ultimative Open-Source-Teleprompter-Anwendung, TiefPrompt
+Teleprompter, der deiner Stimme bei Proben und Aufnahmen folgt.

@@ -5,15 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:tief_screen/tief_screen.dart';
-import 'package:tiefprompt/core/constants.dart';
-import 'package:tiefprompt/providers/prompter_provider.dart';
-import 'package:tiefprompt/providers/script_provider.dart';
-import 'package:tiefprompt/providers/settings_provider.dart';
-import 'package:tiefprompt/ui/screens/home_screen.dart';
-import 'package:tiefprompt/ui/screens/open_file_screen.dart';
-import 'package:tiefprompt/ui/screens/prompter_screen.dart';
-import 'package:tiefprompt/ui/screens/settings/display_settings_screen.dart';
-import 'package:tiefprompt/ui/widgets/prompter_theme_scope.dart';
+import 'package:cueline/core/constants.dart';
+import 'package:cueline/providers/prompter_provider.dart';
+import 'package:cueline/providers/script_provider.dart';
+import 'package:cueline/providers/settings_provider.dart';
+import 'package:cueline/ui/screens/home_screen.dart';
+import 'package:cueline/ui/screens/open_file_screen.dart';
+import 'package:cueline/ui/screens/prompter_screen.dart';
+import 'package:cueline/ui/screens/settings/display_settings_screen.dart';
+import 'package:cueline/ui/widgets/prompter_theme_scope.dart';
 
 import 'mock_app.dart';
 

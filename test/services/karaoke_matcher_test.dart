@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tiefprompt/services/karaoke_matcher.dart';
+import 'package:cueline/services/karaoke_matcher.dart';
 
 const _script =
     'Bugün sizlere yapay zekâ hakkında konuşacağım. '
@@ -283,7 +283,9 @@ void main() {
     test('forward seek is accepted', () {
       readUpTo30();
       active = 45;
-      expect(tracker.onPartial(w(46), active)?.wordIndex, isNull);
+      // 26..30 is outside this window. The exact +1 match is no longer
+      // diluted by those unmatched committed tokens.
+      expect(tracker.onPartial(w(46), active)?.wordIndex, 46);
 
       tracker.resetContext();
       apply(tracker.onPartial('${w(46)} ${w(47)}', active));

@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:tiefprompt/services/speech_recognition_service.dart';
+import 'package:cueline/core/debug_flags.dart';
+import 'package:cueline/services/speech_recognition_service.dart';
 
 part 'speech_recognition_provider.freezed.dart';
 part 'speech_recognition_provider.g.dart';
@@ -72,6 +73,9 @@ class SpeechRecognition extends _$SpeechRecognition {
 
   late SpeechRecognitionService _service;
 
+  /// Language asked for by the last [start]; null means the device default.
+  String? _preferredLocaleId;
+
   @override
   SpeechRecognitionState build() {
     _service = ref.watch(speechRecognitionServiceProvider);
@@ -100,7 +104,9 @@ class SpeechRecognition extends _$SpeechRecognition {
       return false;
     }
 
-    final locale = await _service.resolveLocale();
+    final locale = await _service.resolveLocale(
+      preferredLocaleId: _preferredLocaleId ?? defaultPreferredSpeechLocaleId(),
+    );
     if (!ref.mounted) return false;
     _log(
       'locale: ${locale.localeId} (preferred: ${locale.isPreferred}, '
@@ -119,8 +125,13 @@ class SpeechRecognition extends _$SpeechRecognition {
     return true;
   }
 
-  Future<void> start() async {
-    if (!state.available && !await initialize()) return;
+  /// [preferredLocaleId] picks the recognizer language, e.g. from
+  /// [preferredSpeechLocaleIdForScript]. Omit it to keep the last one.
+  Future<void> start({String? preferredLocaleId}) async {
+    final localeChanged =
+        preferredLocaleId != null && preferredLocaleId != _preferredLocaleId;
+    if (preferredLocaleId != null) _preferredLocaleId = preferredLocaleId;
+    if ((!state.available || localeChanged) && !await initialize()) return;
     if (!ref.mounted) return;
     state = state.copyWith(
       isActive: true,
@@ -146,6 +157,20 @@ class SpeechRecognition extends _$SpeechRecognition {
 
   Future<void> toggle() => _service.isActive ? stop() : start();
 
+  /// Stops the engine but keeps [SpeechRecognitionState.isActive] true.
+  Future<void> pause() async {
+    _log('pause');
+    await _service.pause();
+    if (!ref.mounted) return;
+    state = state.copyWith(isListening: false, isActive: _service.isActive);
+  }
+
+  Future<void> resumeListening() async {
+    if (!_service.isActive && !state.isActive) return;
+    _log('resume');
+    await _service.resume();
+  }
+
   void _onEvent(SpeechRecognitionEvent event) {
     switch (event) {
       case SpeechListeningChanged(:final isListening, :final status):
@@ -157,15 +182,15 @@ class SpeechRecognition extends _$SpeechRecognition {
           sessionCount: state.sessionCount + (isListening ? 1 : 0),
         );
       case SpeechResult(:final text, isFinal: false):
+        if (!kKaraokeDebugTools && state.error == null) return;
         state = state.copyWith(partialText: text, error: null, errorCode: null);
       case SpeechResult(:final text, isFinal: true, :final confidence):
         _log('final: "$text" (confidence $confidence)');
         state = state.copyWith(
           partialText: '',
-          finalText: [
-            state.finalText,
-            text,
-          ].where((s) => s.isNotEmpty).join(' '),
+          finalText: kKaraokeDebugTools
+              ? [state.finalText, text].where((s) => s.isNotEmpty).join(' ')
+              : '',
           error: null,
           errorCode: null,
         );
@@ -187,6 +212,7 @@ class SpeechRecognition extends _$SpeechRecognition {
               code == SpeechRecognitionService.recognizerNotAvailableCode,
         );
       case SpeechSoundLevel(:final level):
+        if (!kKaraokeDebugTools) return;
         final min = state.minSoundLevel;
         final max = state.maxSoundLevel;
         state = state.copyWith(
@@ -201,6 +227,7 @@ class SpeechRecognition extends _$SpeechRecognition {
   }
 
   void _log(String message) {
+    if (!kKaraokeDebugTools) return;
     final now = DateTime.now();
     final time =
         '${now.hour.toString().padLeft(2, '0')}:'

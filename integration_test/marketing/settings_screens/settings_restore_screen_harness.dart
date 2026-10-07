@@ -2,10 +2,10 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tiefprompt/providers/banner_provider.dart';
-import 'package:tiefprompt/providers/settings_provider.dart';
-import 'package:tiefprompt/services/settings_storage_service.dart';
-import 'package:tiefprompt/ui/screens/settings/settings_restore_screen.dart';
+import 'package:cueline/providers/banner_provider.dart';
+import 'package:cueline/providers/settings_provider.dart';
+import 'package:cueline/services/settings_storage_service.dart';
+import 'package:cueline/ui/screens/settings/settings_restore_screen.dart';
 import 'package:tief_screen/tief_screen.dart';
 import 'package:tief_test_harness/tief_test_harness.dart';
 

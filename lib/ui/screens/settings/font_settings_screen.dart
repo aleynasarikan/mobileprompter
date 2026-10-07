@@ -7,10 +7,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tief_fonts/tief_fonts.dart';
-import 'package:tiefprompt/core/fonts.dart';
-import 'package:tiefprompt/providers/fonts_provider.dart';
-import 'package:tiefprompt/ui/widgets/async_settings_builder.dart';
-import 'package:tiefprompt/ui/widgets/safe_scaffold.dart';
+import 'package:cueline/core/fonts.dart';
+import 'package:cueline/providers/fonts_provider.dart';
+import 'package:cueline/ui/widgets/async_settings_builder.dart';
+import 'package:cueline/ui/widgets/safe_scaffold.dart';
 
 class FontSettingsScreen extends ConsumerWidget {
   const FontSettingsScreen({super.key});

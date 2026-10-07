@@ -1,5 +1,5 @@
-name: tiefprompt
-description: "The most simple teleprompter."
+name: cueline
+description: "A speech-following mobile teleprompter."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
@@ -16,7 +16,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.1.0+100
+version: 1.0.0+1
 
 environment:
   sdk: ^3.13.0
@@ -84,6 +84,8 @@ flutter_launcher_icons:
   ios: true
   remove_alpha_ios: true
   image_path: "assets/images/icon-1024x1024.png"
+  adaptive_icon_background: "#0B0C0F"
+  adaptive_icon_foreground: "assets/images/icon-1024x1024.png"
   min_sdk_android: 21
   windows:
     generate: true
@@ -93,9 +95,9 @@ flutter_launcher_icons:
     generate: true
 
 msix_config:
-  display_name: TiefPrompt
-  publisher_display_name: Tiefseetauchner
-  identity_name: io.github.tiefseetauchner.tiefprompt
+  display_name: CueLine
+  publisher_display_name: CueLine
+  identity_name: app.cueline.teleprompter
   msix_version: 1.0.0.0
   logo_path: assets/images/icon_bg_round.png
 
@@ -134,11 +136,7 @@ flutter:
   assets:
     - assets/licenses/
     - assets/translations/
-    - assets/changelogs/en-US/
-    - assets/changelogs/de-DE/
-    - assets/changelogs/ru/
-    - assets/changelogs/zh-CN/
-    - assets/changelogs/en@pirate/
+    - assets/changelogs/product/
     - assets/fonts/
 
   #   - family: Schyler

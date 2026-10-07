@@ -1,17 +1,40 @@
 import 'dart:async';
+import 'dart:ui';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:talker/talker.dart';
-import 'package:tiefprompt/providers/talker_provider.dart';
+import 'package:cueline/core/debug_flags.dart';
+import 'package:cueline/providers/talker_provider.dart';
+import 'package:cueline/services/karaoke_timing_log.dart';
 
 part 'speech_recognition_service.g.dart';
 
 const String kPreferredSpeechLocaleId = 'tr_TR';
+const String kEnglishSpeechLocaleId = 'en_US';
+
+/// Turkish-first, English when the device or app language is English.
+String defaultPreferredSpeechLocaleId([Locale? locale]) {
+  final language = (locale ?? PlatformDispatcher.instance.locale).languageCode
+      .toLowerCase();
+  if (language == 'en') return kEnglishSpeechLocaleId;
+  return kPreferredSpeechLocaleId;
+}
+
+/// Letters that only Turkish uses among the supported script languages.
+final _turkishLetters = RegExp('[çğıöşüÇĞİÖŞÜ]');
+
+/// Recognizer language for [script]: Turkish when the script is Turkish,
+/// otherwise [defaultPreferredSpeechLocaleId]. The device language alone is
+/// not enough: a Turkish script on an English device was recognized as
+/// English and never matched.
+String preferredSpeechLocaleIdForScript(String script, [Locale? locale]) {
+  if (_turkishLetters.hasMatch(script)) return kPreferredSpeechLocaleId;
+  return defaultPreferredSpeechLocaleId(locale);
+}
 
 sealed class SpeechRecognitionEvent {
   const SpeechRecognitionEvent();
@@ -88,14 +111,9 @@ class SpeechLocaleResolution {
 /// Wraps the `speech_to_text` plugin. The plugin's [SpeechToText] is a
 /// process-wide singleton, so only one instance of this service should exist.
 class SpeechRecognitionService {
-  // Android reports these when the user is silent or a session ends; in
-  // continuous mode they only mean "start a new session".
-  static const _silenceErrors = {
-    'error_no_match',
-    'error_speech_timeout',
-    'error_client',
-    'error_busy',
-  };
+  // The recognizer ended because nobody spoke. These may start another
+  // session. error_client and error_busy are failed restarts, not silence.
+  static const _silenceErrors = {'error_no_match', 'error_speech_timeout'};
 
   static const _fatalErrors = {
     'error_permission',
@@ -111,13 +129,13 @@ class SpeechRecognitionService {
   static const listenFailedCode = 'listen_failed';
 
   static const _restartDelay = Duration(milliseconds: 300);
+  static const _maxRestartDelay = Duration(milliseconds: 2400);
   static const _maxFailedRestarts = 5;
 
-  /// Upper bound for one recognizer session; Android usually ends it earlier.
-  static const listenFor = Duration(seconds: 60);
-
-  /// Silence allowed before a session ends.
-  static const pauseFor = Duration(seconds: 2);
+  // No listenFor/pauseFor: the plugin enforces them with its own stop(),
+  // which can land mid-sentence and leave its end-of-speech timer running
+  // into the next session (see [_restartAfterFinal]). The recognizer ends
+  // sessions itself, and every final restarts one.
 
   final SpeechToText _speech;
   final Talker? _talker;
@@ -128,8 +146,21 @@ class SpeechRecognitionService {
   String? _localeId;
   Timer? _restartTimer;
   int _failedRestarts = 0;
+  int _consecutiveSilence = 0;
   bool _listenInFlight = false;
-  bool _stopInFlight = false;
+  bool _disposed = false;
+
+  /// True after [pause] until [resume]/[start]/[stop]. Blocks restarts so a
+  /// `done` from [SpeechToText.stop] cannot reopen the microphone in the
+  /// background.
+  bool _enginePaused = false;
+
+  /// Incremented once per [_listen] call that actually starts a session.
+  int _generation = 0;
+
+  /// Session that already has a restart timer. A second done/error for that
+  /// same session does not schedule another one.
+  int? _restartArmedFor;
 
   SpeechRecognitionService({SpeechToText? speech, this._talker})
     : _speech = speech ?? SpeechToText();
@@ -140,8 +171,8 @@ class SpeechRecognitionService {
 
   bool get isListening => _speech.isListening;
 
-  /// True between [start]/[resume] and [stop]/[pause], including the short
-  /// gaps while a continuous session restarts.
+  /// True between [start] and [stop], including [pause] and the short gaps
+  /// while a continuous session restarts.
   bool get isActive => _wantsListening;
 
   String? get localeId => _localeId;
@@ -163,14 +194,14 @@ class SpeechRecognitionService {
   Future<bool> initialize() async {
     try {
       final available = await _speech.initialize(
-        onStatus: _onStatus,
-        onError: _onError,
-        debugLogging: kDebugMode,
+        onStatus: (status) => _onStatus(status, _generation),
+        onError: (error) => _onError(error, _generation),
+        debugLogging: kKaraokeDebugTools,
       );
       // The plugin only registers listeners on its first successful
-      // initialization.
-      _speech.statusListener = _onStatus;
-      _speech.errorListener = _onError;
+      // initialization. [_listen] replaces these with a session-scoped pair.
+      _speech.statusListener = (status) => _onStatus(status, _generation);
+      _speech.errorListener = (error) => _onError(error, _generation);
       _talker?.info('Speech recognition available: $available');
       _diagnose('initialize() -> $available');
       if (!available) {
@@ -203,8 +234,9 @@ class SpeechRecognitionService {
   }
 
   Future<SpeechLocaleResolution> resolveLocale({
-    String preferredLocaleId = kPreferredSpeechLocaleId,
+    String? preferredLocaleId,
   }) async {
+    preferredLocaleId ??= defaultPreferredSpeechLocaleId();
     final locales = await _speech.locales();
     final ids = locales.map((l) => l.localeId).toList();
     final preferred = _normalize(preferredLocaleId);
@@ -260,14 +292,18 @@ class SpeechRecognitionService {
     _localeId = localeId;
     _continuous = continuous;
     _wantsListening = true;
+    _enginePaused = false;
     _failedRestarts = 0;
+    _consecutiveSilence = 0;
     await _listen();
   }
 
   /// Stops listening; the recognizer still delivers a final result.
   Future<void> stop() async {
     _wantsListening = false;
+    _enginePaused = false;
     _restartTimer?.cancel();
+    _restartArmedFor = null;
     try {
       await _speech.stop();
     } on PlatformException catch (e) {
@@ -279,20 +315,40 @@ class SpeechRecognitionService {
     }
   }
 
-  Future<void> pause() => stop();
+  /// Stops the recognizer without ending the run. [isActive] stays true so
+  /// karaoke following does not fall back to auto-scroll during a brief
+  /// background pause. Call [resume] or [stop] next.
+  Future<void> pause() async {
+    _enginePaused = true;
+    _restartTimer?.cancel();
+    _restartArmedFor = null;
+    try {
+      await _speech.stop();
+    } on PlatformException catch (e) {
+      _emitFailure(
+        'pause failed: ${e.message}',
+        code: e.code,
+        recoverable: true,
+      );
+    }
+  }
 
   /// Resumes with the locale and mode of the last [start].
   Future<void> resume() async {
     if (!_speech.isAvailable) return;
+    _enginePaused = false;
     _wantsListening = true;
     _failedRestarts = 0;
+    _consecutiveSilence = 0;
     await _listen();
   }
 
   /// Stops listening and discards any pending result.
   Future<void> cancel() async {
     _wantsListening = false;
+    _enginePaused = false;
     _restartTimer?.cancel();
+    _restartArmedFor = null;
     try {
       await _speech.cancel();
     } on PlatformException catch (e) {
@@ -305,50 +361,52 @@ class SpeechRecognitionService {
   }
 
   Future<void> dispose() async {
+    _disposed = true;
     await cancel();
     await _events.close();
   }
 
   Future<void> _listen() async {
     _restartTimer?.cancel();
-    if (!_wantsListening ||
+    if (_disposed ||
+        _enginePaused ||
+        !_wantsListening ||
         _speech.isListening ||
-        _listenInFlight ||
-        _stopInFlight) {
+        _listenInFlight) {
       return;
     }
+    final session = ++_generation;
+    KaraokeTimingLog.listenStarted(session);
+    _restartArmedFor = null;
+    _speech.statusListener = (status) => _onStatus(status, session);
+    _speech.errorListener = (error) => _onError(error, session);
     _diagnose(
-      'listen(locale: ${_localeId ?? 'default'}, partialResults: true, '
-      'listenFor: ${listenFor.inSeconds}s, pauseFor: ${pauseFor.inSeconds}s)',
+      'listen(locale: ${_localeId ?? 'default'}, partialResults: true)',
     );
     _listenInFlight = true;
     try {
       await _speech.listen(
-        onResult: _onResult,
+        onResult: (result) => _onResult(result, session),
         onSoundLevelChange: _onSoundLevel,
         listenOptions: SpeechListenOptions(
           localeId: _localeId,
           partialResults: true,
           cancelOnError: false,
-          listenFor: listenFor,
-          pauseFor: pauseFor,
+          listenMode: ListenMode.dictation,
         ),
       );
     } on ListenFailedException catch (e) {
       _failedRestarts++;
       final willRetry = _canRestart;
+      if (!willRetry) _closeListening();
       _emitFailure(
         'listen failed: ${e.message} ${e.details ?? ''}'.trim(),
         code: listenFailedCode,
         recoverable: willRetry,
       );
-      if (willRetry) {
-        _scheduleRestart();
-      } else {
-        _wantsListening = false;
-      }
+      if (willRetry) _armRestart(session);
     } on SpeechToTextNotInitializedException {
-      _wantsListening = false;
+      _closeListening();
       _emitFailure(
         'Speech recognition is not initialized.',
         code: initFailedCode,
@@ -359,62 +417,117 @@ class SpeechRecognitionService {
     }
   }
 
-  /// Android's recognizer ends its session with a final result, but the
-  /// plugin drops all later results and keeps reporting "listening" until
-  /// its pause timer fires. Ending the session right away lets the next one
-  /// start after [_restartDelay].
-  Future<void> _restartAfterFinal() async {
-    if (!_canRestart || _stopInFlight) return;
-    _restartTimer?.cancel();
-    _diagnose('final result: restarting session');
-    _stopInFlight = true;
-    try {
-      await _speech.stop();
-    } on PlatformException catch (e) {
-      _diagnose('stop after final failed: ${e.code}: ${e.message}');
-    } finally {
-      _stopInFlight = false;
+  /// After a final the plugin drops every later result of the session, and
+  /// Google's continuous recognizer may keep the session open, so it is
+  /// ended right away and the next one starts after [_restartDelay].
+  ///
+  /// It is cancelled, not stopped: a stop while the speaker is already on
+  /// the next sentence makes the recognizer report end of speech afterwards,
+  /// and the plugin's end-of-speech timer then marks the *next* session as
+  /// not listening while the recognizer still runs it. Every later listen
+  /// fails with error_client. The final is already delivered, so cancel
+  /// loses nothing. The `done` this causes arms the same restart, which
+  /// [_armRestart] schedules only once per session.
+  Future<void> _restartAfterFinal(int session) async {
+    if (session != _generation || !_canRestart) return;
+    if (_speech.isListening) {
+      try {
+        await _speech.cancel();
+      } on PlatformException catch (e) {
+        _diagnose('cancel after final failed: ${e.code}: ${e.message}');
+      }
     }
-    // The `done` status emitted by the stop may already have scheduled a
-    // restart; this replaces it, so only one listen() follows.
-    _scheduleRestart();
+    _armRestart(session);
   }
 
   bool get _canRestart =>
-      _wantsListening && _continuous && _failedRestarts < _maxFailedRestarts;
+      !_enginePaused &&
+      _wantsListening &&
+      _continuous &&
+      _failedRestarts < _maxFailedRestarts;
 
-  void _scheduleRestart() {
-    if (!_canRestart) return;
+  /// Schedules at most one restart for [session]. Callbacks from an older
+  /// session, and a second callback from this session, do not call listen.
+  void _armRestart(int session) {
+    if (session != _generation) return;
+    if (_disposed || !_canRestart) return;
+    if (_speech.isListening) return;
+    if (_restartArmedFor == session) return;
+    _restartArmedFor = session;
     _restartTimer?.cancel();
-    _restartTimer = Timer(_restartDelay, _listen);
+    final delay = _delayForRestart();
+    _diagnose('scheduling restart in ${delay.inMilliseconds}ms');
+    _restartTimer = Timer(delay, () {
+      if (_restartArmedFor == session) _restartArmedFor = null;
+      if (_disposed ||
+          session != _generation ||
+          !_wantsListening ||
+          _speech.isListening) {
+        return;
+      }
+      _listen();
+    });
   }
 
-  void _onStatus(String status) {
+  /// Silence timeouts are retried, but the gap grows so an empty-session
+  /// loop does not hammer the recognizer or the battery.
+  Duration _delayForRestart() {
+    if (_consecutiveSilence <= 1) return _restartDelay;
+    final shift = (_consecutiveSilence - 1).clamp(1, 3);
+    final ms = _restartDelay.inMilliseconds * (1 << shift);
+    return Duration(
+      milliseconds: ms.clamp(
+        _restartDelay.inMilliseconds,
+        _maxRestartDelay.inMilliseconds,
+      ),
+    );
+  }
+
+  void _closeListening() {
+    _wantsListening = false;
+    _restartTimer?.cancel();
+    _restartArmedFor = null;
+  }
+
+  void _onStatus(String status, int session) {
+    if (session != _generation) return;
+    if (status == SpeechToText.listeningStatus) {
+      KaraokeTimingLog.statusListening(session);
+    } else if (status == SpeechToText.notListeningStatus) {
+      KaraokeTimingLog.notListening(session);
+    } else if (status == SpeechToText.doneStatus) {
+      KaraokeTimingLog.done(session);
+    } else {
+      KaraokeTimingLog.statusOther(status, session);
+    }
     _talker?.debug('Speech status: $status');
     final isListening = status == SpeechToText.listeningStatus;
-    if (isListening) _failedRestarts = 0;
     _add(SpeechListeningChanged(isListening: isListening, status: status));
-    if (status == SpeechToText.doneStatus) _scheduleRestart();
+    if (status == SpeechToText.doneStatus) _armRestart(session);
   }
 
-  void _onError(SpeechRecognitionError error) {
+  void _onError(SpeechRecognitionError error, int session) {
+    if (session != _generation) return;
     _talker?.warning(
       'Speech error: ${error.errorMsg} (permanent: ${error.permanent})',
     );
     if (_fatalErrors.contains(error.errorMsg)) _wantsListening = false;
-    if (!_silenceErrors.contains(error.errorMsg)) _failedRestarts++;
+    if (_silenceErrors.contains(error.errorMsg)) {
+      _consecutiveSilence++;
+    } else {
+      _failedRestarts++;
+      _consecutiveSilence = 0;
+    }
 
     final willRestart = _canRestart;
+    // Set before the event so listeners observe the closed session.
+    if (!willRestart) _closeListening();
     _emitFailure(
       _describeError(error.errorMsg),
       code: error.errorMsg,
       recoverable: willRestart,
     );
-    if (willRestart) {
-      _scheduleRestart();
-    } else {
-      _wantsListening = false;
-    }
+    if (willRestart) _armRestart(session);
   }
 
   static String _describeError(String code) => switch (code) {
@@ -436,7 +549,22 @@ class SpeechRecognitionService {
 
   void _onSoundLevel(double level) => _add(SpeechSoundLevel(level));
 
-  void _onResult(SpeechRecognitionResult result) {
+  void _onResult(SpeechRecognitionResult result, int session) {
+    // Drop callbacks from a session that already ended. A delayed final
+    // from the previous listen must not move karaoke or arm another restart.
+    if (session != _generation) return;
+    // A recognized word means this session is healthy. `listening` alone is
+    // not: the plugin reports it as soon as startListening is posted, before
+    // a client/busy failure, and resetting there made the cap unreachable.
+    if (result.recognizedWords.isNotEmpty) {
+      _failedRestarts = 0;
+      _consecutiveSilence = 0;
+    }
+    if (result.finalResult) {
+      KaraokeTimingLog.finalResult(result.recognizedWords, session);
+    } else {
+      KaraokeTimingLog.partial(result.recognizedWords, session);
+    }
     _add(
       SpeechResult(
         text: result.recognizedWords,
@@ -444,7 +572,7 @@ class SpeechRecognitionService {
         confidence: result.confidence,
       ),
     );
-    if (result.finalResult) unawaited(_restartAfterFinal());
+    if (result.finalResult) unawaited(_restartAfterFinal(session));
   }
 
   void _emitFailure(
@@ -452,6 +580,7 @@ class SpeechRecognitionService {
     required String code,
     required bool recoverable,
   }) {
+    KaraokeTimingLog.error(code, _generation);
     _add(SpeechFailure(code: code, message: message, recoverable: recoverable));
   }
 

@@ -1,100 +1,87 @@
-# TiefPrompt
+# CueLine
 
-[![](https://dcbadge.limes.pink/api/server/https://discord.gg/EG3zU9cTFx)](https://discord.gg/EG3zU9cTFx)
-[![Weblate project translated](https://img.shields.io/weblate/progress/tiefprompt?style=for-the-badge)](https://hosted.weblate.org/projects/tiefprompt)
+CueLine is a speech-following mobile teleprompter. Paste a script, tap Start, and speak. The app matches your words to the text, highlights the current word, and scrolls as you go.
 
-An extraordinarily simple cross-platform teleprompter.
+It is based on [TiefPrompt](https://github.com/Tiefseetauchner/tiefprompt) by Lena Tauchner (MIT License).
 
-## Usage
+## Features
 
-Load a script from a file or paste it into the input box.
+- Speech-following karaoke highlighting (Turkish first; English when the device language is English)
+- Manual seek that is not pulled back by delayed speech results
+- Play / pause, speed control, and an optional countdown
+- Adjustable font size, font family, alignment, and Markdown
+- Horizontal or vertical flip for a physical teleprompter glass
+- Scripts stored on the device
+- English and Turkish UI, plus the original additional locales
 
-Press play to start the teleprompter. Press pause to stop it. Press + to make it faster, - to make it slower. There's also a button to flip it vertically and one to flip it horizontally. Font size can also be adjusted. And so much more!
+If speech recognition is unavailable, Play falls back to auto-scroll.
 
-**Feature List**
+Developer karaoke tools (word stepper, speech debug screen, Android overlay) stay off unless you pass `--dart-define=KARAOKE_DEBUG=true` in a **debug** build. They are never compiled into release.
 
-- Play/pause, speed control (0.1x–20x), and a countdown timer before scrolling starts
-- Adjustable font size, font family, text alignment, and Markdown rendering
-- Flip text horizontally or vertically for use with a physical teleprompter
-- Reading indicator box, side margins, and top/bottom margin fade
-- Custom text and background colors, app accent color, light/dark/system theme
-- Save multiple named scripts, or use a quick throwaway script without saving
-- Export and import settings as JSON
-- Fully customizable keyboard shortcuts
-- Keeps the screen awake during playback
-- Available in English, German, Simplified Chinese (incomplete), Russian, and Pirate English (the most important language)
+## How speech tracking works
 
-## Download
+1. You open a script and tap **Start**.
+2. CueLine asks for microphone permission if needed.
+3. The operating-system speech recognizer returns partial and final text.
+4. CueLine matches that text to the script around the current word and moves the highlight forward.
+5. If you drag the text, tracking continues from the new reading line. Results from the previous utterance are ignored.
 
-[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
-     alt="Get it on F-Droid"
-     height="80">](https://f-droid.org/packages/io.github.tiefseetauchner.tiefprompt/)
+Speech recognition is provided by the OS (Google speech services on Android, Apple speech recognition on iOS). CueLine does not send audio to its own servers. See [docs/privacy.md](docs/privacy.md).
 
-Or download the latest APK from the [Releases Section](https://github.com/Tiefseetauchner/tiefprompt/releases/latest). Also available on [the Apple App Store](https://apps.apple.com/us/app/tiefprompt/id6749463142)!
+## Supported platforms
 
-## Build
+- **Android** — primary production target
+- **iOS** — project is prepared; a Mac with Xcode and an Apple Developer account are required to ship
 
-The `tools/build.sh` script is the easiest way to build the application.
+Desktop folders (macOS, Linux, Windows) remain from the upstream project and are not the current product focus.
+
+## Development setup
 
 ```bash
-Build TiefPrompt packages.
-usage: build.sh [options]
-
--t target   Comma seperated list of targets to build. Options:
-            linux,windows,androidaab,androidapk,macos,iosapp,iosipa
-            (i) Can be set via environment variable 'TARGETS'
-            (!) Required
--f freedom  Freedom level to apply to Application. Options:
-            freemium,foss
-            (i) Can be set via environment variable 'FREEDOM'
-            (!) Required
--b dir      Build directory to place packages in.
-            Default: /package
-            (i) Unix path - not interpreted relatively!
-            (i) Can be set via environment variable 'BUILD_DIR'
--s          Skip Flutter preperation.
--d          Run debug build.
--c          Continue on fail.
--q          Make script quiet.
--v          Make script verbose.
--V          Make script extremely verbose (careful here!).
--h          Show this help.
+flutter pub get
+flutter analyze
+flutter test
 ```
 
-For example, to build linux and android APKs, run `./tools/build.sh -t linux,androidapk -f foss`.
+Run on a device:
 
-Foss vs Freemium decides, which entrypoint is used. See the [Fossium](#fossium) section.
+```bash
+flutter run
+```
 
-You can still run the app using `.flutter/bin/flutter run`, which will launch the fallback main.dart.
+Karaoke debug tools:
 
-Note that, if you're building for windows, you will need a bash. I recommend the git bash, normally located under `C:\Program Files\Git\bin\bash.exe` to run `build.sh`.
+```bash
+flutter run --dart-define=KARAOKE_DEBUG=true
+```
 
-## Fossium
+Use a physical device for speech recognition. Emulators are not reliable for STT.
 
-This application is sadly not only an extreme time-, but also money sink for me. That's why I decided to make the application freemium when downloaded from the Apple App Store or Google Play.
+## Tests
 
-This does not, however, affect F-Droid or my uploaded builds - these remain free as in beer. That's why I split the application in a `main_foss.dart` and a `main_freemium.dart` entrypoint. The different versions can be built using the build script, or just with `.flutter/bin/flutter build [target] -t main_[freedom].dart`.
+```bash
+flutter test
+```
 
-There's an unvalidated iOS build available, I have no idea whether it works but if it does, yippie!
+## Release
 
-## Translations
+See [docs/release.md](docs/release.md) for Android signing, Play / App Store notes, and known external blockers.
 
-We use hosted weblate (at this time at least) to translate the application.
-Feel free to help out! [Join the project](https://hosted.weblate.org/projects/tiefprompt)!
+```bash
+flutter build apk --release
+flutter build appbundle --release
+```
 
-When adding a new language, don't forget to add it to the lib/core/constants.dart kSupportedLocales
-list.
+An Android App Bundle can be produced without a Play upload key, but Play Console will not accept an unsigned or debug-signed AAB. Configure `android/key.properties` from `android/key.properties.example` first.
+
+## Known limitations
+
+- On Android, Google speech recognition can close the session at the end of a sentence. CueLine restarts listening after a short delay; a brief gap or system beep is possible.
+- Turkish recognition uses a network service unless an offline language pack is installed on the device.
+- Store listing, screenshots, and signing credentials are not included in this repository.
 
 ## License
 
-MIT. Look at [LICENSE](LICENSE) for details.
+MIT. See [LICENSE](LICENSE).
 
-## Contributing
-
-Be nice please?
-
-## Coffee
-
-I need more coffee. Please.
-
-[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/tiefseetauchner)
+CueLine includes third-party fonts and packages; font licenses are in `assets/licenses/`, and dependency licenses are listed in the in-app About / Licenses screen.

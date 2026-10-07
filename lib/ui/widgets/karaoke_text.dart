@@ -6,14 +6,9 @@ import 'package:flutter/rendering.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tief_weave/markdown.dart';
 import 'package:tief_weave/text_direction/inline_text_direction_detector.dart';
-
-/// Temporary switch: while true, the prompter renders through [KaraokeText]
-/// and shows [KaraokeDebugPanel]. Disable with
-/// `--dart-define=KARAOKE_DEBUG=false`.
-const bool kKaraokeDebugMode = bool.fromEnvironment(
-  'KARAOKE_DEBUG',
-  defaultValue: kDebugMode,
-);
+import 'package:cueline/core/debug_flags.dart';
+import 'package:cueline/services/karaoke_timing_log.dart';
+import 'package:cueline/ui/theme/cueline_tokens.dart';
 
 enum KaraokeBlockKind { paragraph, heading, rule }
 
@@ -44,6 +39,13 @@ class KaraokeBlock {
   final int wordCount;
   final TextDirection? textDirection;
 
+  /// Index of the source paragraph/heading/rule (markdown AST block or plain
+  /// text line) this block was built from.
+  final int sourceIndex;
+
+  /// True for the second and later parts of a long paragraph that was split.
+  final bool continuesSource;
+
   const KaraokeBlock({
     required this.kind,
     required this.runs,
@@ -51,6 +53,8 @@ class KaraokeBlock {
     required this.wordCount,
     this.headingLevel = 0,
     this.textDirection,
+    this.sourceIndex = 0,
+    this.continuesSource = false,
   });
 }
 
@@ -62,6 +66,7 @@ class KaraokeDocument {
   final Int32List _wordBlock;
   final Int32List _wordStart;
   final Int32List _wordEnd;
+  final Int32List _firstBlockOfSource;
 
   KaraokeDocument._(
     this.blocks,
@@ -69,6 +74,7 @@ class KaraokeDocument {
     this._wordBlock,
     this._wordStart,
     this._wordEnd,
+    this._firstBlockOfSource,
   );
 
   static final empty = KaraokeDocument._(
@@ -77,9 +83,20 @@ class KaraokeDocument {
     Int32List(0),
     Int32List(0),
     Int32List(0),
+    Int32List(0),
   );
 
+  /// Paragraphs longer than this are split at sentence ends. Every word
+  /// change re-lays out the paragraph holding it, which gets slow for
+  /// thousands of words in one paragraph.
+  static const splitParagraphsLongerThan = 150;
+
   int get wordCount => _wordBlock.length;
+
+  int get sourceBlockCount => _firstBlockOfSource.length;
+
+  /// First rendered block of source block [sourceIndex].
+  int firstBlockOfSource(int sourceIndex) => _firstBlockOfSource[sourceIndex];
 
   int blockOfWord(int wordIndex) => _wordBlock[wordIndex];
 
@@ -162,12 +179,16 @@ const _headingStyle = TextStyle(fontWeight: FontWeight.bold);
 
 class _KaraokeDocumentBuilder {
   static final _tokenPattern = RegExp(r'\s+|\S+');
+  static final _sentenceEnd = RegExp(r'''[.!?…:;]["'”’»)\]]*$''');
+  static const _minChunkWords = 60;
+  static const _maxChunkWords = 120;
 
   final _blocks = <KaraokeBlock>[];
   final _words = <String>[];
   final _wordBlock = <int>[];
   final _wordStart = <int>[];
   final _wordEnd = <int>[];
+  final _firstBlockOfSource = <int>[];
 
   void addTextBlock(
     KaraokeBlockKind kind,
@@ -175,11 +196,32 @@ class _KaraokeDocumentBuilder {
     int headingLevel = 0,
     TextDirection? textDirection,
   }) {
-    final blockIndex = _blocks.length;
-    final firstWordIndex = _wordBlock.length;
-    final runs = <KaraokeRun>[];
+    final sourceIndex = _firstBlockOfSource.length;
+    _firstBlockOfSource.add(_blocks.length);
+    final splittable =
+        kind == KaraokeBlockKind.paragraph &&
+        _roughWordCount(segments) > KaraokeDocument.splitParagraphsLongerThan;
+
+    var firstWordIndex = _wordBlock.length;
+    var runs = <KaraokeRun>[];
     var offset = 0;
     var currentWord = -1;
+    var continuesSource = false;
+
+    void closeBlock() {
+      _blocks.add(
+        KaraokeBlock(
+          kind: kind,
+          runs: runs,
+          firstWordIndex: firstWordIndex,
+          wordCount: _wordBlock.length - firstWordIndex,
+          headingLevel: headingLevel,
+          textDirection: textDirection,
+          sourceIndex: sourceIndex,
+          continuesSource: continuesSource,
+        ),
+      );
+    }
 
     // A word may span several segments, e.g. "**bold**word".
     for (final (text, style) in segments) {
@@ -190,6 +232,20 @@ class _KaraokeDocumentBuilder {
           if (currentWord >= 0) {
             _wordEnd.add(offset);
             currentWord = -1;
+            final inBlock = _wordBlock.length - firstWordIndex;
+            if (splittable &&
+                (inBlock >= _maxChunkWords ||
+                    (inBlock >= _minChunkWords &&
+                        _sentenceEnd.hasMatch(_words.last)))) {
+              // The next part starts on its own line, so this space is
+              // dropped.
+              closeBlock();
+              firstWordIndex = _wordBlock.length;
+              runs = <KaraokeRun>[];
+              offset = 0;
+              continuesSource = true;
+              continue;
+            }
           }
           runs.add(
             KaraokeRun(part, _wordBlock.length - 1, style, isWord: false),
@@ -197,7 +253,7 @@ class _KaraokeDocumentBuilder {
         } else {
           if (currentWord < 0) {
             currentWord = _wordBlock.length;
-            _wordBlock.add(blockIndex);
+            _wordBlock.add(_blocks.length);
             _wordStart.add(offset);
             _words.add(part);
           } else {
@@ -209,26 +265,30 @@ class _KaraokeDocumentBuilder {
       }
     }
     if (currentWord >= 0) _wordEnd.add(offset);
+    closeBlock();
+  }
 
-    _blocks.add(
-      KaraokeBlock(
-        kind: kind,
-        runs: runs,
-        firstWordIndex: firstWordIndex,
-        wordCount: _wordBlock.length - firstWordIndex,
-        headingLevel: headingLevel,
-        textDirection: textDirection,
-      ),
-    );
+  static int _roughWordCount(List<(String, TextStyle?)> segments) {
+    var count = 0;
+    for (final (text, _) in segments) {
+      count += _tokenPattern
+          .allMatches(text)
+          .where((m) => m[0]!.trim().isNotEmpty)
+          .length;
+    }
+    return count;
   }
 
   void addRuleBlock() {
+    final sourceIndex = _firstBlockOfSource.length;
+    _firstBlockOfSource.add(_blocks.length);
     _blocks.add(
       KaraokeBlock(
         kind: KaraokeBlockKind.rule,
         runs: const [],
         firstWordIndex: _wordBlock.length,
         wordCount: 0,
+        sourceIndex: sourceIndex,
       ),
     );
   }
@@ -239,6 +299,7 @@ class _KaraokeDocumentBuilder {
     Int32List.fromList(_wordBlock),
     Int32List.fromList(_wordStart),
     Int32List.fromList(_wordEnd),
+    Int32List.fromList(_firstBlockOfSource),
   );
 }
 
@@ -285,6 +346,7 @@ class KaraokeController extends ChangeNotifier {
     final next = _clamp(index);
     if (next == _activeWordIndex) return;
     _activeWordIndex = next;
+    KaraokeTimingLog.indexChanged(next, source: 'set');
     notifyListeners();
   }
 
@@ -294,7 +356,10 @@ class KaraokeController extends ChangeNotifier {
   /// following restarts from here.
   void seek(int index) {
     _seekCount++;
-    _activeWordIndex = _clamp(index);
+    final next = _clamp(index);
+    final changed = next != _activeWordIndex;
+    _activeWordIndex = next;
+    if (changed) KaraokeTimingLog.indexChanged(next, source: 'seek');
     notifyListeners();
   }
 
@@ -556,12 +621,18 @@ class _KaraokeTextState extends State<KaraokeText> {
     final bottomAligned = viewport.getOffsetToReveal(target, 1, rect: wordRect);
     final rectTop = topAligned.offset - position.pixels;
     final rectBottom = bottomAligned.offset - position.pixels + extent;
-    if (rectTop >= extent * 0.15 && rectBottom <= extent * 0.75) return;
-
     final destination = viewport
         .getOffsetToReveal(target, widget.revealAlignment, rect: wordRect)
         .offset
         .clamp(position.minScrollExtent, position.maxScrollExtent);
+    // Speech keeps the spoken word on the reading line. Otherwise a word
+    // that is merely on screen does not move the script.
+    if (!widget.controller.speechMode &&
+        rectTop >= extent * 0.15 &&
+        rectBottom <= extent * 0.75) {
+      return;
+    }
+    if ((destination - position.pixels).abs() < 1) return;
     position.animateTo(
       destination,
       duration: const Duration(milliseconds: 300),
@@ -593,10 +664,12 @@ class _KaraokeTextState extends State<KaraokeText> {
         widget.style?.color ??
         DefaultTextStyle.of(context).style.color ??
         theme.colorScheme.onSurface;
-    // Only the color changes between states, so weight, style and layout of
-    // the markdown spans stay untouched.
+    // Color only: weight and metrics stay the same so the layout does not
+    // jump when the active word moves. Read words stay readable on camera.
     final styles = (
-      TextStyle(color: baseColor.withValues(alpha: 0.35)),
+      TextStyle(
+        color: baseColor.withValues(alpha: CueLineTokens.karaokeReadOpacity),
+      ),
       TextStyle(color: theme.colorScheme.primary),
     );
     if (styles != _stateStyles) {
@@ -769,12 +842,13 @@ class KaraokeDebugPanel extends StatelessWidget {
                   ),
                   onPressed: onToggleSpeech,
                 ),
-              IconButton(
-                color: Colors.white,
-                tooltip: 'Speech-to-text test',
-                icon: const Icon(Icons.mic),
-                onPressed: () => context.push('/speech_debug'),
-              ),
+              if (kKaraokeDebugTools)
+                IconButton(
+                  color: Colors.white,
+                  tooltip: 'Speech-to-text test',
+                  icon: const Icon(Icons.mic),
+                  onPressed: () => context.push('/speech_debug'),
+                ),
             ],
           ),
         ),

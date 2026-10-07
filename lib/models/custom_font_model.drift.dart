@@ -1,11 +1,11 @@
 // dart format width=80
 // ignore_for_file: type=lint
 import 'package:drift/drift.dart' as i0;
-import 'package:tiefprompt/models/custom_font_model.drift.dart' as i1;
+import 'package:cueline/models/custom_font_model.drift.dart' as i1;
 
 import 'dart:typed_data' as i2;
 
-import 'package:tiefprompt/models/custom_font_model.dart' as i3;
+import 'package:cueline/models/custom_font_model.dart' as i3;
 import 'package:drift/src/runtime/query_builder/query_builder.dart' as i4;
 
 typedef $$CustomFontModelTableCreateCompanionBuilder =

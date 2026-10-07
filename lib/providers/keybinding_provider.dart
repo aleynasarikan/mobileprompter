@@ -1,11 +1,11 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/services.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:tiefprompt/core/constants.dart';
-import 'package:tiefprompt/models/keybinding.dart';
-import 'package:tiefprompt/providers/database_provider.dart';
-import 'package:tiefprompt/providers/settings_provider.dart';
-import 'package:tiefprompt/providers/talker_provider.dart';
+import 'package:cueline/core/constants.dart';
+import 'package:cueline/models/keybinding.dart';
+import 'package:cueline/providers/database_provider.dart';
+import 'package:cueline/providers/settings_provider.dart';
+import 'package:cueline/providers/talker_provider.dart';
 
 part 'keybinding_provider.g.dart';
 

@@ -1,11 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tiefprompt/providers/combining_provider.dart';
-import 'package:tiefprompt/providers/fonts_provider.dart';
-import 'package:tiefprompt/providers/settings_provider.dart';
-import 'package:tiefprompt/providers/theme_provider.dart';
-import 'package:tiefprompt/ui/screens/reset_settings_screen.dart';
+import 'package:cueline/core/constants.dart';
+import 'package:cueline/providers/combining_provider.dart';
+import 'package:cueline/providers/fonts_provider.dart';
+import 'package:cueline/providers/settings_provider.dart';
+import 'package:cueline/providers/theme_provider.dart';
+import 'package:cueline/ui/screens/reset_settings_screen.dart';
 
 class ThemedApp extends ConsumerWidget {
   final RouterConfig<Object> routerConfig;
@@ -42,14 +43,14 @@ class ThemedApp extends ConsumerWidget {
 
     if (combined case AsyncError(:final error)) {
       return MaterialApp(
-        title: 'Teleprompter',
+        title: kAppName,
         localizationsDelegates: delegates,
         supportedLocales: supportedLocales,
         locale: locale,
         home: ResetSettingsScreen(
-          title: "An Exceedingly Scary Error",
+          title: "Couldn't load CueLine",
           message:
-              "Something went wrong loading your settings or maybe even the themes ( :c ). Resetting them should get things working again.",
+              "Settings could not be loaded. Resetting them should restore the app.",
           error: error,
         ),
       );
@@ -62,8 +63,8 @@ class ThemedApp extends ConsumerWidget {
         combinedValue?.states[0] as ThemeMode? ?? ThemeMode.system;
 
     return MaterialApp.router(
-      title: 'Teleprompter',
-      debugShowCheckedModeBanner: debugShowCheckedModeBanner,
+      title: kAppName,
+      debugShowCheckedModeBanner: false,
       localizationsDelegates: delegates,
       supportedLocales: supportedLocales,
       locale: locale,

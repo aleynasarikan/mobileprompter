@@ -1,14 +1,14 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:tiefprompt/core/fonts.dart';
-import 'package:tiefprompt/providers/combining_provider.dart';
-import 'package:tiefprompt/providers/fonts_provider.dart';
-import 'package:tiefprompt/ui/widgets/async_settings_builder.dart';
-import 'package:tiefprompt/ui/widgets/safe_scaffold.dart';
+import 'package:cueline/core/fonts.dart';
+import 'package:cueline/providers/combining_provider.dart';
+import 'package:cueline/providers/fonts_provider.dart';
+import 'package:cueline/ui/widgets/async_settings_builder.dart';
+import 'package:cueline/ui/widgets/settings_group.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tiefprompt/core/constants.dart';
-import 'package:tiefprompt/providers/settings_provider.dart';
-import 'package:tiefprompt/ui/widgets/app_settings.dart';
+import 'package:cueline/core/constants.dart';
+import 'package:cueline/providers/settings_provider.dart';
+import 'package:cueline/ui/widgets/app_settings.dart';
 
 class TextSettingsScreen extends ConsumerWidget {
   const TextSettingsScreen({super.key});
@@ -30,12 +30,12 @@ class TextSettingsScreen extends ConsumerWidget {
 
         final prompterConfig = settingsState.config;
 
-        return SafeScaffold(
-          appBar: AppBar(
-            title: Text(context.tr("SettingsScreen.TextSettings")),
-          ),
-          body: ListView(
-            children: [
+        return SettingsListScaffold(
+          title: context.tr("SettingsScreen.TextSettings"),
+          children: [
+            SettingsGroup(
+              title: context.tr("SettingsScreen.Section_Appearance"),
+              children: [
               NumberAppSetting(
                 key: const Key("TextSettingsScreen.NumberAppSetting_FontSize"),
                 feature: Feature.fontSize,
@@ -140,8 +140,9 @@ class TextSettingsScreen extends ConsumerWidget {
                     .read(settingsProvider.notifier)
                     .setShowCurrentChapter(updatedValue),
               ),
-            ],
-          ),
+              ],
+            ),
+          ],
         );
       },
     );

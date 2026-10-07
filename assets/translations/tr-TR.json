@@ -1,0 +1,288 @@
+{
+  "title": "CueLine",
+  "empty_title": "Adsız metin",
+  "copyright": "CueLine, Lena Tauchner’in MIT lisanslı TiefPrompt projesine dayanır.\nOrijinal telif hakkı © Lena Tauchner. Ayrıntılar için LICENSE dosyasına bakın.\n",
+  "credits": "Orijinal yazılımın çevirilerine katkıda bulunanlar:\n Çince: @TaoEngine\n Rusça: @Xapitonov\n Arapça: @shadigaafar",
+  "ProFeatureDisabled": "Bu özellik yalnızca Pro sürümünde kullanılabilir.",
+  "AboutDialog": {
+    "Text_PrivacyText": "CueLine mikrofonu ve cihazın konuşma tanımasını yalnızca oynatma sırasında kullanır. Uygulama kayıt tutmaz.",
+    "Text_PrivacyBody": "CueLine yerel bir teleprompterdır. Yazdığınız veya açtığınız metinler bu cihazda saklanır.\n\nMikrofon erişimi yalnızca Oynat’a bastığınızda, konuştuğunuz kelimeleri takip etmek ve metni kaydırmak için kullanılır. Oynatmayı durdurunca veya teleprompterden çıkınca dinleme durur.\n\nKonuşma tanımayı işletim sistemi sağlar (Android’de Google, iOS’ta Apple). CueLine sesi kendi sunucularına göndermez. Çevrimdışı dil paketi yoksa sistem tanıması ağ bağlantısı kullanabilir.\n\nCueLine hesap oluşturmaz; kendi reklam veya analitik SDK’sını içermez.",
+    "ElevatedButton_Privacy": "Gizlilik"
+  },
+  "AboutScreen": {
+    "title": "Hakkında",
+    "tagline": "Prova ve kayıt için konuşmayı takip eden teleprompter.",
+    "version": "Sürüm {}",
+    "licenses": "Lisanslar"
+  },
+  "ChangelogModal": {
+    "title": "Yenilikler",
+    "close": "Kapat"
+  },
+  "HomeScreen": {
+    "TitleField_heading": "Başlık",
+    "TitleField_hintText": "İsteğe bağlı başlık",
+    "TextField_heading": "Metin",
+    "TextField_hintText": "Metni yapıştırın veya yazın",
+    "Intro": "Metni yapıştırın, provayı başlatın ve konuşun. CueLine kelimelerinizi takip eder.",
+    "EmptyScript": "Teleprompteri başlatmadan önce bir metin ekleyin.",
+    "UnsavedHint": "Kaydedilmemiş değişiklikler",
+    "ElevatedButton_Start": "Prova başlat",
+    "ElevatedButton_Select": "Aç",
+    "ElevatedButton_Save": "Kaydet",
+    "IconButton_Settings": "Ayarlar",
+    "IconButton_SourceCode": "Kaynak kodu",
+    "IconButton_About": "Hakkında",
+    "BottomSheet": {
+      "Text_Title": "Metni kaydet",
+      "TextField_hintText": "Metin adı",
+      "ElevatedButton_Save": "Kaydet"
+    },
+    "DiscardConfirmDialog": {
+      "Title": "Değişiklikler silinsin mi?",
+      "Body": "Başka bir metin açmak kaydedilmemiş değişiklikleri siler.",
+      "Cancel": "Vazgeç",
+      "Confirm": "Sil ve devam et"
+    },
+    "NewOrOverrideDialog": {
+      "Title": "Üzerine yazılsın mı, yoksa yeni olarak mı kaydedilsin?",
+      "NewScript": "Yeni metin olarak kaydet",
+      "OverrideScript": "Üzerine yaz"
+    },
+    "Understood": "Anladım"
+  },
+  "SettingsScreen": {
+    "title": "Ayarlar",
+    "Section_Appearance": "Görünüm",
+    "Section_Prompter": "Teleprompter",
+    "Section_About": "Hakkında",
+    "ThemeMode": {
+      "system": "Sistem",
+      "light": "Açık",
+      "dark": "Koyu"
+    },
+    "NumberAppSetting": {
+      "Value": "Değer girin",
+      "ElevatedButton_Save": "Kaydet"
+    },
+    "DropdownAppSetting_DefaultLanguage": "Dil",
+    "DropdownAppSetting_Theme": "Tema",
+    "NumberAppSetting_DefaultScrollSpeed": "Kaydırma hızı",
+    "NumberAppSetting_DefaultScrollSpeed_Unit": "satır/sn",
+    "NumberAppSetting_DefaultFontSize": "Yazı boyutu",
+    "NumberAppSetting_DefaultFontSize_Unit": "px",
+    "DropdownAppSetting_DefaultTextAlignment": "Hizalama",
+    "DropdownAppSetting_DefaultTextAlignment_Unit": {
+      "Left": "Sol",
+      "Center": "Orta",
+      "Right": "Sağ",
+      "Justified": "İki yana"
+    },
+    "ElevatedButton_Save": "Kaydet",
+    "DropdownAppSetting_DefaultFontFamily": "Yazı tipi",
+    "LinkAppSetting_CustomFonts": "Özel yazı tipleri",
+    "BooleanAppSetting_DefaultFlipX": "Yatay çevir",
+    "BooleanAppSetting_DefaultFlipY": "Dikey çevir",
+    "BooleanAppSetting_ReadingIndicatorBoxes": "Okuma göstergesi",
+    "BooleanAppSetting_Markdown": "Markdown",
+    "BooleanAppSetting_ShowCurrentChapter": "Geçerli bölümü göster",
+    "BooleanAppSetting_ControlButtons": "Ekran kontrolleri",
+    "DropdownAppSetting_ControlButtonPosition": {
+      "Label": "Kontrol konumu",
+      "left": "Sol",
+      "top": "Üst",
+      "right": "Sağ",
+      "bottom": "Alt"
+    },
+    "ShowHelpRequest": "Destek notunu tekrar göster",
+    "ShowChangelog": "Yenilikler",
+    "ViewLogs": "Günlükler",
+    "NumberAppSetting_ReadingIndicatorBoxes": "Okuma göstergesi yüksekliği",
+    "NumberAppSetting_ReadingIndicatorBoxes_Unit": "%",
+    "BooleanAppSetting_VerticalMarginBoxes": "Dikey kenarlık",
+    "NumberAppSetting_VerticalMarginBoxes": "Dikey kenarlık yüksekliği",
+    "NumberAppSetting_VerticalMarginBoxes_Unit": "%",
+    "BooleanAppSetting_VerticalMarginBoxes_FadeEnabled": "Kenarlık solması",
+    "NumberAppSetting_VerticalMarginBoxes_FadeLength": "Solma uzunluğu",
+    "NumberAppSetting_VerticalMarginBoxes_FadeLength_Unit": "%",
+    "NumberAppSetting_SideMargin": "Yan boşluk",
+    "NumberAppSetting_SideMargin_Unit": "%",
+    "NumberAppSetting_CountdownTimer": "Geri sayım",
+    "NumberAppSetting_CountdownTimer_Unit": "sn",
+    "ColorAppSetting_AppPrimaryColor": "Vurgu rengi",
+    "ColorAppSetting_PrompterBackgroundColor": "Teleprompter arka planı",
+    "ColorAppSetting_PrompterTextColor": "Teleprompter yazı rengi",
+    "DisplaySettings": "Görüntü",
+    "TextSettings": "Yazı",
+    "ListTile_Reset": "Ayarları sıfırla",
+    "Reset_Warning": "Tüm ayarlar kalıcı olarak sıfırlanacak.",
+    "Abort": "Vazgeç",
+    "Confirm": "Onayla",
+    "RestorePurchases": "Satın almaları geri yükle",
+    "RestorePurchases_Snackbar": "Satın almalar geri yüklendi.",
+    "KeybindingsSettings": {
+      "Title": "Kısayollar",
+      "ChangeBindings": "Kısayolu değiştir",
+      "AddBinding": "Kısayol ekle",
+      "CaptureBindingTitle": "Bir tuş birleşimine basın",
+      "CaptureBindingHint": "Ctrl, Alt, Shift veya Meta basılı tutup bir tuşa basın.",
+      "ResetBindings": "Varsayılan kısayollara dön",
+      "playPause": "Oynat / Duraklat",
+      "scrollUpSmall": "Biraz yukarı kaydır",
+      "scrollDownSmall": "Biraz aşağı kaydır",
+      "scrollUp": "Yukarı kaydır",
+      "scrollDown": "Aşağı kaydır",
+      "pageUp": "Bir sayfa yukarı",
+      "pageDown": "Bir sayfa aşağı",
+      "jumpStart": "Başa git",
+      "jumpEnd": "Sona git",
+      "toggleControls": "Kontrolleri aç/kapat",
+      "speedUp": "Hızı artır",
+      "speedDown": "Hızı azalt",
+      "fontSizeUp": "Yazıyı büyüt",
+      "fontSizeDown": "Yazıyı küçült",
+      "openSettings": "Ayarları aç",
+      "saveSettingsFromPrompter": "Teleprompter ayarlarını kaydet"
+    },
+    "SettingsRestore": {
+      "Title": "Ayar profilleri",
+      "Save": "Geçerli ayarları kaydet",
+      "Import": "Dosyadan içe aktar",
+      "LoadError": "Kayıtlı ayarlar yüklenemedi.",
+      "NameRequired": "Bir profil adı girin.",
+      "SaveSuccess": "Ayar profili kaydedildi.",
+      "ImportSuccess": "Ayar profili içe aktarıldı.",
+      "ImportFailed": "İçe aktarma başarısız.",
+      "RestoreSuccess": "Ayarlar geri yüklendi.",
+      "RestoreFailed": "Geri yükleme başarısız.",
+      "ExportSuccess": "Ayar profili dışa aktarıldı.",
+      "ExportFailed": "Dışa aktarma başarısız.",
+      "DeleteSuccess": "Ayar profili silindi.",
+      "NameSheet": {
+        "Title": "Bu profile bir ad verin",
+        "Content": "İçe aktarılan profile bir ad verin."
+      },
+      "DeleteDialog": {
+        "Title": "Ayar profilini sil",
+        "Content": "{} adlı kayıtlı ayarlar kalıcı olarak silinecek.",
+        "Cancel": "Vazgeç",
+        "Confirm": "Onayla"
+      },
+      "OptionsDialog": {
+        "Title": "Diğer seçenekler",
+        "Export": "Profili dışa aktar",
+        "FilePickerTitle": "Dışa aktarma dosyasını seçin",
+        "Delete": "Profili sil"
+      },
+      "ImportSettings": {
+        "Title": "Ayar profili içe aktar",
+        "Content": "Bir dosya seçin. Bu işlem mevcut ayarların üzerine yazmaz; yeni bir profil ekler.",
+        "Cancel": "Vazgeç",
+        "Import": "Dosya seç",
+        "InvalidVersion": "Geçersiz şema sürümü. Bu CueLine sürümüne ait bir ayar dosyası kullanın."
+      },
+      "SaveDialog": {
+        "Title": "Ayar profilini kaydet",
+        "Content": "Bu ayarları bir ad altında kaydedebilirsiniz.",
+        "HintText": "Profil adı",
+        "Cancel": "Vazgeç",
+        "Save": "Kaydet"
+      }
+    },
+    "FontSettings": {
+      "Title": "Yazı tipleri",
+      "AddFont": "Yazı tipi ekle",
+      "BuiltIn": "Yerleşik",
+      "Custom": "Özel",
+      "EditFamilyTooltip": {
+        "BuiltIn": "Yerleşik yazı tipleri yeniden adlandırılamaz",
+        "Custom": "Yeniden adlandır"
+      },
+      "EditVariantTooltip": {
+        "BuiltIn": "Yerleşik varyantlar düzenlenemez",
+        "Custom": "Varyantı düzenle"
+      },
+      "MoveVariantTooltip": {
+        "BuiltIn": "Yerleşik varyantlar taşınamaz",
+        "Custom": "Başka bir yazı tipine taşı"
+      },
+      "DeleteVariantTooltip": {
+        "BuiltIn": "Yerleşik varyantlar silinemez",
+        "Custom": "Varyantı sil"
+      },
+      "MoveFontDialog": {
+        "Title": "Varyantı taşı"
+      },
+      "EditFontDialog": {
+        "Title": "Yazı tipini düzenle",
+        "SetFontFamilyName": "Yazı tipi adı",
+        "Cancel": "Vazgeç",
+        "Save": "Kaydet",
+        "Warning": "Bu değerleri değiştirmek varyantın yazı tipi dosyasıyla eşleşmemesine yol açabilir. Bu işlem geri alınamaz.",
+        "SetFontVariantWeight": "Kalınlık",
+        "SetFontItalics": "İtalik"
+      }
+    }
+  },
+  "PrompterScreen": {
+    "speed": "{}x",
+    "Speech": {
+      "listening": "Dinleniyor",
+      "starting": "Mikrofon açılıyor…",
+      "paused": "Duraklatıldı",
+      "trackingPaused": "Takip duraklatıldı",
+      "retrying": "Konuşma tanıma kesildi. Yeniden deneniyor…",
+      "permissionDenied": "Sesle takip için mikrofon izni gerekir.",
+      "unavailable": "Konuşma tanıma kullanılamıyor. Otomatik kaydırma kullanılıyor.",
+      "microphoneBusy": "Mikrofon başka bir uygulama tarafından kullanılıyor.",
+      "emptyScript": "Teleprompteri başlatmadan önce bir metin ekleyin."
+    },
+    "TheEnd": "Son",
+    "fontsize": "F: {}",
+    "IconButton_Save": "Görünümü kaydet",
+    "IconButton_DisplaySettings": "Görüntü ayarları",
+    "IconButton_DecreaseSpeed": "Hızı azalt",
+    "IconButton_TogglePlayPause": "Sesle takibi başlat veya durdur",
+    "IconButton_IncreaseSpeed": "Hızı artır",
+    "IconButton_TextFormat": "Yazı ayarları",
+    "IconButton_Settings": "Ayarlar",
+    "SimpleDialog_TextFormat": {
+      "title": "Yazı",
+      "fontsize": "F: {}",
+      "IconButton_TextIncrease": "Büyüt",
+      "IconButton_TextDecrease": "Küçült",
+      "IconButton_Left": "Sola hizala",
+      "IconButton_Center": "Ortala",
+      "IconButton_Right": "Sağa hizala",
+      "IconButton_Justified": "İki yana yasla"
+    },
+    "SimpleDialog_DisplaySettings": {
+      "title": "Görüntü",
+      "IconButton_FlipX": "Yatay çevir",
+      "IconButton_FlipY": "Dikey çevir",
+      "IconButton_Markdown": "Markdown",
+      "IconButton_ReadingIndicatorBoxes": "Okuma göstergesi",
+      "IconButton_VerticalMarginBoxes": "Dikey kenarlık",
+      "IconButton_FadeEnabled": "Kenarlık solması",
+      "IconButton_ShowCurrentChapter": "Geçerli bölüm",
+      "Slider_SideMargin": "Yan boşluk",
+      "Slider_Countdown": "Geri sayım"
+    }
+  },
+  "OpenFileScreen": {
+    "title": "Metin seç",
+    "if_empty": "Kayıtlı metin yok. Kaydettiğiniz metinler burada görünür.",
+    "ElevatedButton_Select": "Dosya aç",
+    "ListTile_Delete": "Sil"
+  },
+  "HelpRequestScreen": {
+    "Title": "Gizlilik",
+    "Abstract": "",
+    "Continue": "Devam"
+  },
+  "NoPurchaseAvailable": {
+    "Title": "Satın alma yok",
+    "Back": "Geri",
+    "MainBody": "Bu ekran yalnızca derleme kolaylığı için var."
+  }
+}

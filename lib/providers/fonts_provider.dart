@@ -1,13 +1,13 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:tiefprompt/core/constants.dart';
-import 'package:tiefprompt/core/fonts.dart';
-import 'package:tiefprompt/models/custom_font_model.dart';
-import 'package:tiefprompt/models/custom_font_model.drift.dart';
-import 'package:tiefprompt/providers/database_provider.dart';
-import 'package:tiefprompt/providers/settings_provider.dart';
-import 'package:tiefprompt/providers/talker_provider.dart';
+import 'package:cueline/core/constants.dart';
+import 'package:cueline/core/fonts.dart';
+import 'package:cueline/models/custom_font_model.dart';
+import 'package:cueline/models/custom_font_model.drift.dart';
+import 'package:cueline/providers/database_provider.dart';
+import 'package:cueline/providers/settings_provider.dart';
+import 'package:cueline/providers/talker_provider.dart';
 
 part 'fonts_provider.g.dart';
 

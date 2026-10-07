@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:tiefprompt/core/constants.dart';
-import 'package:tiefprompt/providers/settings_provider.dart';
-import 'package:tiefprompt/ui/screens/reset_settings_screen.dart';
-import 'package:tiefprompt/ui/widgets/safe_scaffold.dart';
+import 'package:cueline/core/constants.dart';
+import 'package:cueline/providers/settings_provider.dart';
+import 'package:cueline/ui/screens/reset_settings_screen.dart';
 
 class AsyncSettingsBuilder<T> extends ConsumerWidget {
   final AsyncValue<T> state;
@@ -22,12 +20,13 @@ class AsyncSettingsBuilder<T> extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return switch (state) {
       AsyncData(:final value) => builder(ref, value),
-      AsyncLoading() => Center(
-        child: SafeScaffold(
-          appBar: AppBar(title: Text(screenTitle)),
-          body: SpinKitRing(
+      AsyncLoading() => Scaffold(
+        appBar: AppBar(title: Text(screenTitle)),
+        body: Center(
+          child: CircularProgressIndicator(
             color:
-                ref.read(settingsProvider).value?.appPrimaryColor ?? kBrandTeal,
+                ref.read(settingsProvider).value?.appPrimaryColor ??
+                kBrandAccent,
           ),
         ),
       ),

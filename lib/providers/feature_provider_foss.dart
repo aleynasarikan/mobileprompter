@@ -1,13 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/framework.dart';
-import 'package:tiefprompt/core/constants.dart';
-import 'package:tiefprompt/core/disabled_feature_screen_state.dart';
-import 'package:tiefprompt/core/utilities.dart';
-import 'package:tiefprompt/providers/app_features.dart';
-import 'package:tiefprompt/providers/feature_provider.dart';
-import 'package:tiefprompt/ui/screens/no_purchase_available_screen.dart';
-import 'package:tiefprompt/ui/widgets/feature_version_popup_content.dart';
+import 'package:cueline/core/constants.dart';
+import 'package:cueline/core/disabled_feature_screen_state.dart';
+import 'package:cueline/providers/app_features.dart';
+import 'package:cueline/providers/feature_provider.dart';
+import 'package:cueline/ui/screens/no_purchase_available_screen.dart';
+import 'package:cueline/ui/widgets/feature_version_popup_content.dart';
 
 class FeaturesFoss extends Features {
   @override
@@ -48,16 +46,7 @@ class FeaturesFoss extends Features {
     return (context) => FeatureVersionPopupContent(
       featureName: context.tr("HomeScreen.FossVersion"),
       featureExplanation: context.tr("HomeScreen.FossVersion_Explanation"),
-      actions: [
-        ElevatedButton(
-          onPressed: () => launchUrlFromString(kRepoUrl),
-          child: Text(kRepoUrl),
-        ),
-        OutlinedButton(
-          onPressed: () => launchUrlFromString(kDonationUrl),
-          child: Text(kDonationUrl),
-        ),
-      ],
+      actions: const [],
     );
   }
 }

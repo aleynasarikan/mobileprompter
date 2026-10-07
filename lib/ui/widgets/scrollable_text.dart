@@ -1,14 +1,17 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tief_weave/markdown.dart';
-import 'package:tiefprompt/providers/current_chapter_provider.dart';
-import 'package:tiefprompt/providers/prompter_provider.dart';
-import 'package:tiefprompt/providers/speech_recognition_provider.dart';
-import 'package:tiefprompt/services/karaoke_matcher.dart';
-import 'package:tiefprompt/services/karaoke_speech_follower.dart';
-import 'package:tiefprompt/services/speech_recognition_service.dart';
-import 'package:tiefprompt/ui/widgets/karaoke_text.dart';
+import 'package:cueline/core/debug_flags.dart';
+import 'package:cueline/providers/current_chapter_provider.dart';
+import 'package:cueline/providers/prompter_provider.dart';
+import 'package:cueline/providers/speech_recognition_provider.dart';
+import 'package:cueline/services/creator_mode.dart';
+import 'package:cueline/services/karaoke_matcher.dart';
+import 'package:cueline/services/karaoke_speech_follower.dart';
+import 'package:cueline/services/speech_recognition_service.dart';
+import 'package:cueline/ui/widgets/karaoke_text.dart';
 
 /// Width reserved for the karaoke debug strip in portrait, beside the text.
 const double kKaraokeDebugStripWidth = 64;
@@ -16,13 +19,17 @@ const double kKaraokeDebugStripWidth = 64;
 const double kPortraitTextHorizontalPadding = 20;
 const double kPortraitTextDebugGap = 12;
 
+/// Where the first line rests in the scroll viewport (0 = top, 1 = bottom).
+/// Matches [KaraokeText.revealAlignment].
+const double kPrompterReadingLine = 0.35;
+
 class _UserScrolling extends Notifier<bool> {
   @override
   bool build() => false;
   void setValue(bool v) => state = v;
 }
 
-final _userScrollingProvider = NotifierProvider<_UserScrolling, bool>(
+final userScrollingProvider = NotifierProvider<_UserScrolling, bool>(
   _UserScrolling.new,
   isAutoDispose: false,
 );
@@ -91,9 +98,29 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
   List<({String title, double offset})> _chapterOffsets = [];
   double _topPadding = 0;
   KaraokeSpeechFollower? _speechFollower;
+  CreatorMode? _creatorMode;
   bool _userDragging = false;
+  bool _alignedOpening = false;
+  int _alignAttempts = 0;
+
+  /// While the recognizer is running it owns the scroll. Speed scroll is only
+  /// the fallback when speech recognition is not active.
+  bool get _speechOwnsScroll => widget.controller.karaokeController.speechMode;
+
+  void _syncPlayScroll() {
+    if (!mounted) return;
+    final playing = ref.read(prompterProvider).isPlaying;
+    if (playing && !_speechOwnsScroll) {
+      _startScrolling(ref.read(prompterProvider).config.scrollSpeed);
+    } else {
+      _stopScrolling();
+    }
+  }
+
+  void _onKaraokeActivity() => _syncPlayScroll();
 
   void _startScrolling(double speed) {
+    if (_ticker?.isActive == true && _scrollSpeed == speed) return;
     _stopScrolling();
     _scrollSpeed = speed;
     _lastElapsed = Duration.zero;
@@ -118,15 +145,55 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
 
     _rebuildAst();
 
-    if (kKaraokeDebugMode) {
-      _speechFollower = KaraokeSpeechFollower(
-        controller: widget.controller.karaokeController,
-        events: ref.read(speechRecognitionServiceProvider).events,
+    final karaoke = widget.controller.karaokeController;
+    _speechFollower = KaraokeSpeechFollower(
+      controller: karaoke,
+      events: ref.read(speechRecognitionServiceProvider).events,
+    );
+    if (kKaraokeDebugTools) {
+      final creatorMode = ref.read(creatorModeProvider);
+      _creatorMode = creatorMode;
+      creatorMode.attach(
+        listenable: karaoke,
+        words: () => karaoke.document.words,
+        index: () => karaoke.activeWordIndex,
       );
     }
 
     _markdownController.addListener(_recomputeChapterOffsets);
     widget.controller.scrollController.addListener(_updateCurrentChapter);
+    widget.controller.karaokeController.addListener(_onKaraokeActivity);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _alignOpening());
+  }
+
+  /// The lead-in used to be the full screen. The scroll viewport is shorter
+  /// (chrome sits outside it), so offset 0 left the script below the fold
+  /// and play never brought it up once speech mode stopped the ticker.
+  void _alignOpening() {
+    if (_alignedOpening || !mounted) return;
+    final scroll = widget.controller.scrollController;
+    if (!scroll.hasClients || !scroll.position.hasContentDimensions) {
+      if (_alignAttempts++ < 3) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _alignOpening());
+      }
+      return;
+    }
+    _alignedOpening = true;
+    final position = scroll.position;
+    final textStart = _topPadding;
+    // End spacer is one viewport tall, so the script ends at maxScrollExtent.
+    final scriptEnd = position.maxScrollExtent;
+    final viewStart = position.pixels;
+    final viewEnd = viewStart + position.viewportDimension;
+    final showsScript = textStart < viewEnd - 4 && scriptEnd > viewStart + 4;
+    if (showsScript || scriptEnd <= textStart + 4) return;
+    final target =
+        (textStart - position.viewportDimension * kPrompterReadingLine).clamp(
+          position.minScrollExtent,
+          position.maxScrollExtent,
+        );
+    if ((target - position.pixels).abs() <= 1) return;
+    widget.controller.jumpTo(target);
   }
 
   @override
@@ -134,6 +201,12 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
     super.didUpdateWidget(oldWidget);
     if (widget.text != oldWidget.text) {
       _rebuildAst();
+      if (kKaraokeDebugTools) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ref.read(creatorModeProvider).sync();
+        });
+      }
     }
   }
 
@@ -156,9 +229,8 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
     _updateCurrentChapter();
   }
 
-  double? _blockOffset(int blockIndex) => kKaraokeDebugMode
-      ? widget.controller.karaokeController.blockOffset(blockIndex)
-      : _markdownController.offsetOf(blockIndex);
+  double? _blockOffset(int blockIndex) =>
+      widget.controller.karaokeController.blockOffset(blockIndex);
 
   String _inlinesToText(List<Inline> inlines) {
     return inlines
@@ -200,7 +272,7 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
   }
 
   void _tick(Duration elapsed) {
-    final isUserScrolling = ref.read(_userScrollingProvider);
+    final isUserScrolling = ref.read(userScrollingProvider);
 
     final deltaSeconds =
         (elapsed - _lastElapsed).inMicroseconds /
@@ -239,20 +311,22 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
       prompterProvider.select(
         (p) => (isPlaying: p.isPlaying, speed: p.config.scrollSpeed),
       ),
-      (previous, next) {
-        if (next.isPlaying) {
-          _startScrolling(next.speed);
-        } else {
-          _stopScrolling();
-        }
-      },
+      (previous, next) => _syncPlayScroll(),
     );
+
+    ref.listen(speechRecognitionProvider.select((s) => s.isActive), (
+      _,
+      active,
+    ) {
+      widget.controller.karaokeController.speechMode = active;
+      if (active) _speechFollower?.reset();
+      _syncPlayScroll();
+    });
 
     final mediaHeight = MediaQuery.of(context).size.height;
     final mediaWidth = MediaQuery.of(context).size.width;
     final isPortrait =
         MediaQuery.orientationOf(context) == Orientation.portrait;
-    _topPadding = mediaHeight;
 
     final (
       :mirroredX,
@@ -278,83 +352,64 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
       });
     }
 
-    if (!kKaraokeDebugMode) {
-      if (isPortrait) {
-        return _portraitBody(
-          reserveDebugStrip: false,
-          mirroredX: mirroredX,
-          mirroredY: mirroredY,
-          markdownEnabled: markdownEnabled,
-          alignment: alignment,
-          endSpacerHeight: mediaHeight,
-        );
-      }
-      return _buildScrollView(
-        contentWidth: mediaWidth - widget.sideMargin * 2,
-        leftInset: widget.sideMargin,
-        rightInset: widget.sideMargin,
-        topInset: mediaHeight,
-        bottomInset: 0,
-        endSpacerHeight: mediaHeight,
-        mirroredX: mirroredX,
-        mirroredY: mirroredY,
-        markdownEnabled: markdownEnabled,
-        alignment: alignment,
-      );
-    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final viewport =
+            constraints.maxHeight.isFinite && constraints.maxHeight > 0
+            ? constraints.maxHeight
+            : mediaHeight;
+        // First line sits on the reading line at offset 0.
+        _topPadding = viewport * kPrompterReadingLine;
+        if (isPortrait) {
+          return _portraitBody(
+            reserveDebugStrip: kKaraokeDebugTools,
+            mirroredX: mirroredX,
+            mirroredY: mirroredY,
+            markdownEnabled: markdownEnabled,
+            alignment: alignment,
+            leadIn: _topPadding,
+            endSpacerHeight: viewport,
+          );
+        }
 
-    ref.listen(speechRecognitionProvider.select((s) => s.isActive), (
-      _,
-      active,
-    ) {
-      widget.controller.karaokeController.speechMode = active;
-      if (active) _speechFollower?.reset();
-    });
-
-    if (isPortrait) {
-      return _portraitBody(
-        reserveDebugStrip: true,
-        mirroredX: mirroredX,
-        mirroredY: mirroredY,
-        markdownEnabled: markdownEnabled,
-        alignment: alignment,
-        endSpacerHeight: mediaHeight,
-      );
-    }
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        _buildScrollView(
+        final scrollView = _buildScrollView(
           contentWidth: mediaWidth - widget.sideMargin * 2,
           leftInset: widget.sideMargin,
           rightInset: widget.sideMargin,
-          topInset: mediaHeight,
+          topInset: _topPadding,
           bottomInset: 0,
-          endSpacerHeight: mediaHeight,
+          endSpacerHeight: viewport,
           mirroredX: mirroredX,
           mirroredY: mirroredY,
           markdownEnabled: markdownEnabled,
           alignment: alignment,
-        ),
-        Positioned(
-          top: 0,
-          bottom: 0,
-          right: 0,
-          child: Center(child: _debugPanel()),
-        ),
-        if (_speechFollower case final follower?)
-          Positioned(
-            top: 8,
-            left: 8,
-            child: IgnorePointer(
-              child: _SpeechFollowDebugInfo(
-                follower: follower,
-                controller: widget.controller.karaokeController,
-              ),
+        );
+        if (!kKaraokeDebugTools) return scrollView;
+
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            scrollView,
+            Positioned(
+              top: 0,
+              bottom: 0,
+              right: 0,
+              child: Center(child: _debugPanel()),
             ),
-          ),
-      ],
+            if (_speechFollower case final follower?)
+              Positioned(
+                top: 8,
+                left: 8,
+                child: IgnorePointer(
+                  child: _SpeechFollowDebugInfo(
+                    follower: follower,
+                    controller: widget.controller.karaokeController,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -365,6 +420,7 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
     required bool mirroredY,
     required bool markdownEnabled,
     required TextAlign alignment,
+    required double leadIn,
     required double endSpacerHeight,
   }) {
     return LayoutBuilder(
@@ -385,7 +441,7 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
           contentWidth: available < 1 ? textAreaWidth : available,
           leftInset: available < 1 ? 0 : leftInset,
           rightInset: available < 1 ? 0 : rightInset,
-          topInset: endSpacerHeight,
+          topInset: leadIn,
           bottomInset: 0,
           endSpacerHeight: endSpacerHeight,
           mirroredX: mirroredX,
@@ -447,6 +503,11 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
     );
   }
 
+  String _endLabel(BuildContext context) {
+    if (EasyLocalization.of(context) == null) return 'The End';
+    return context.tr('PrompterScreen.TheEnd');
+  }
+
   Widget _buildScrollView({
     required double contentWidth,
     required double leftInset,
@@ -466,7 +527,7 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
           _userDragging = true;
           widget.controller.karaokeController.isUserScrolling = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            ref.read(_userScrollingProvider.notifier).setValue(true);
+            ref.read(userScrollingProvider.notifier).setValue(true);
           });
         } else if (notification is ScrollEndNotification) {
           // Also reached after the fling that follows a drag.
@@ -480,7 +541,7 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
             });
           }
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            ref.read(_userScrollingProvider.notifier).setValue(false);
+            ref.read(userScrollingProvider.notifier).setValue(false);
           });
         }
         return false;
@@ -498,29 +559,21 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
           ),
           child: Column(
             children: [
-              if (kKaraokeDebugMode)
-                KaraokeText(
-                  text: widget.text,
-                  markdownAst: markdownEnabled ? _ast : null,
-                  controller: widget.controller.karaokeController,
-                  textAlign: alignment,
-                  style: widget.style,
-                  width: contentWidth,
-                  onLayout: _recomputeChapterOffsets,
-                )
-              else if (markdownEnabled)
-                Markdown(
-                  widget.text,
-                  controller: _markdownController,
-                  textAlign: alignment,
-                  style: widget.style,
-                  width: contentWidth,
-                )
-              else
-                Text(widget.text, style: widget.style, textAlign: alignment),
+              KaraokeText(
+                text: widget.text,
+                markdownAst: markdownEnabled ? _ast : null,
+                controller: widget.controller.karaokeController,
+                textAlign: alignment,
+                style: widget.style,
+                width: contentWidth,
+                revealAlignment: kPrompterReadingLine,
+                onLayout: _recomputeChapterOffsets,
+              ),
               SizedBox(
                 height: endSpacerHeight,
-                child: Center(child: Text("The End", style: widget.style)),
+                child: Center(
+                  child: Text(_endLabel(context), style: widget.style),
+                ),
               ),
             ],
           ),
@@ -532,12 +585,15 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
   @override
   void dispose() {
     _stopScrolling();
+    widget.controller.karaokeController.removeListener(_onKaraokeActivity);
     _ticker?.dispose();
     _ticker = null;
     widget.controller.scrollController.removeListener(_updateCurrentChapter);
     _markdownController.removeListener(_recomputeChapterOffsets);
     _markdownController.dispose();
     _speechFollower?.dispose();
+    _creatorMode?.detach(widget.controller.karaokeController);
+    _creatorMode = null;
     super.dispose();
   }
 }

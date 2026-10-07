@@ -1,17 +1,16 @@
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:tiefprompt/core/constants.dart';
-import 'package:tiefprompt/providers/banner_provider.dart';
-import 'package:tiefprompt/providers/database_provider.dart';
-import 'package:tiefprompt/providers/feature_provider.dart';
-import 'package:tiefprompt/providers/router_provider.dart';
-import 'package:tiefprompt/providers/script_provider.dart';
-import 'package:tiefprompt/providers/talker_provider.dart';
-import 'package:tiefprompt/services/script_service.dart';
-import 'package:tiefprompt/ui/widgets/banner_listener.dart';
-import 'package:tiefprompt/ui/widgets/themed_app.dart';
+import 'package:cueline/core/constants.dart';
+import 'package:cueline/providers/banner_provider.dart';
+import 'package:cueline/providers/database_provider.dart';
+import 'package:cueline/providers/feature_provider.dart';
+import 'package:cueline/providers/router_provider.dart';
+import 'package:cueline/providers/script_provider.dart';
+import 'package:cueline/providers/talker_provider.dart';
+import 'package:cueline/services/script_service.dart';
+import 'package:cueline/ui/widgets/banner_listener.dart';
+import 'package:cueline/ui/widgets/themed_app.dart';
 
 class TeleprompterApp extends ConsumerStatefulWidget {
   const TeleprompterApp({super.key});
@@ -39,7 +38,7 @@ class _TeleprompterAppState extends ConsumerState<TeleprompterApp> {
       }
 
       if (ref
-          .watch(featuresProvider)
+          .read(featuresProvider)
           .features
           .contains(Feature.ephemeralScript)) {
         final ephemeralScriptsFilter = ref
@@ -65,7 +64,7 @@ class _TeleprompterAppState extends ConsumerState<TeleprompterApp> {
             ref
                 .read(bannerMessageProvider.notifier)
                 .set(
-                  "Multiple ephemeral scripts were found. Creating empty new ephemeral script. This is a bug in TiefPrompt, please report it to the author.",
+                  "Multiple draft scripts were found. A new empty draft was created.",
                 );
           }
 
@@ -95,7 +94,7 @@ class _TeleprompterAppState extends ConsumerState<TeleprompterApp> {
       builder: (context, child) => BannerListener(
         child:
             child ??
-            const SizedBox.shrink(child: SpinKitRing(color: kBrandTeal)),
+            const Center(child: CircularProgressIndicator(color: kBrandAccent)),
       ),
     );
   }

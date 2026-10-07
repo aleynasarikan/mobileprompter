@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:tiefprompt/core/constants.dart';
-import 'package:tiefprompt/core/control_buttons.dart';
-import 'package:tiefprompt/core/json_converters.dart';
+import 'package:cueline/core/constants.dart';
+import 'package:cueline/core/control_buttons.dart';
+import 'package:cueline/core/json_converters.dart';
 
 part 'prompter_config.freezed.dart';
 part 'prompter_config.g.dart';
@@ -15,7 +15,7 @@ abstract class PrompterConfiguration with _$PrompterConfiguration {
     @Default(1.0) double scrollSpeed,
     @Default(false) bool mirroredX,
     @Default(false) bool mirroredY,
-    @Default(42.0) double fontSize,
+    @Default(48.0) double fontSize,
     @Default(0.0) double sideMargin,
     @Default('Roboto') String fontFamily,
     @TextAlignConverter() @Default(TextAlign.left) TextAlign alignment,

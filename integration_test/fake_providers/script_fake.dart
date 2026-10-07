@@ -1,4 +1,4 @@
-import 'package:tiefprompt/providers/script_provider.dart';
+import 'package:cueline/providers/script_provider.dart';
 
 class ScriptFake extends Script {
   final String name;

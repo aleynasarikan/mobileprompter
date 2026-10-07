@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tiefprompt/core/fonts.dart';
-import 'package:tiefprompt/providers/fonts_provider.dart';
-import 'package:tiefprompt/ui/screens/settings/font_settings_screen.dart';
+import 'package:cueline/core/fonts.dart';
+import 'package:cueline/providers/fonts_provider.dart';
+import 'package:cueline/ui/screens/settings/font_settings_screen.dart';
 import 'package:tief_screen/tief_screen.dart';
 import 'package:tief_test_harness/tief_test_harness.dart';
 

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tiefprompt/core/constants.dart';
-import 'package:tiefprompt/core/control_buttons.dart';
-import 'package:tiefprompt/providers/prompter_config.dart';
-import 'package:tiefprompt/providers/prompter_provider.dart';
-import 'package:tiefprompt/providers/script_provider.dart';
-import 'package:tiefprompt/providers/settings_provider.dart';
-import 'package:tiefprompt/ui/screens/prompter_screen.dart';
-import 'package:tiefprompt/ui/widgets/prompter_bottom_bar.dart';
-import 'package:tiefprompt/ui/widgets/prompter_theme_scope.dart';
+import 'package:cueline/core/constants.dart';
+import 'package:cueline/core/control_buttons.dart';
+import 'package:cueline/providers/prompter_config.dart';
+import 'package:cueline/providers/prompter_provider.dart';
+import 'package:cueline/providers/script_provider.dart';
+import 'package:cueline/providers/settings_provider.dart';
+import 'package:cueline/ui/screens/prompter_screen.dart';
+import 'package:cueline/ui/widgets/prompter_bottom_bar.dart';
+import 'package:cueline/ui/widgets/prompter_theme_scope.dart';
 import 'package:tief_test_harness/tief_test_harness.dart';
 
 import '../../fake_providers/script_fake.dart';

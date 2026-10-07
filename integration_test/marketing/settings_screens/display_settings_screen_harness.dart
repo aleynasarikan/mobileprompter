@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tiefprompt/core/control_buttons.dart';
-import 'package:tiefprompt/providers/feature_provider.dart';
-import 'package:tiefprompt/providers/settings_provider.dart';
-import 'package:tiefprompt/ui/screens/settings/display_settings_screen.dart';
+import 'package:cueline/core/control_buttons.dart';
+import 'package:cueline/providers/feature_provider.dart';
+import 'package:cueline/providers/settings_provider.dart';
+import 'package:cueline/ui/screens/settings/display_settings_screen.dart';
 import 'package:tief_screen/tief_screen.dart';
 import 'package:tief_test_harness/tief_test_harness.dart';
 

@@ -151,7 +151,8 @@ class KaraokeMatch {
   /// Script word index of the last matched spoken word, -1 for none.
   final int wordIndex;
 
-  /// 0..1: similarity-weighted share of the spoken context that matched.
+  /// 0..1. Unmatched tokens carried over from the previous final are not
+  /// counted in the denominator.
   final double confidence;
   final KaraokeMatchMethod method;
   final int matchedCount;
@@ -205,10 +206,16 @@ class KaraokeMatcher {
   ///
   /// Searches around [activeWordIndex] unless [global] is set. Among equally
   /// good candidates the one closest to the active word wins.
+  ///
+  /// [freshCount] is how many trailing tokens belong to the current partial
+  /// or final. Tokens before them stay in the alignment as committed context.
+  /// Unmatched committed tokens are left out of the confidence denominator.
+  /// Omit it to treat every token as fresh.
   KaraokeMatch match(
     List<String> spoken, {
     required int activeWordIndex,
     bool global = false,
+    int? freshCount,
   }) {
     final context = spoken.length > config.spokenContext
         ? spoken.sublist(spoken.length - config.spokenContext)
@@ -298,10 +305,12 @@ class KaraokeMatcher {
     }
     if (bestI < 0) return KaraokeMatch.none;
 
+    final inChain = List<bool>.filled(m, false);
     final matched = <String>[];
     for (var cell = bestI * w + bestJ; cell >= 0;) {
       final i = cell ~/ w;
       final j = cell % w;
+      inChain[i] = true;
       matched.add(context[i]);
       cell = previous[i][j];
     }
@@ -314,9 +323,24 @@ class KaraokeMatcher {
         ? KaraokeMatchMethod.exact
         : KaraokeMatchMethod.sequence;
 
+    // Ranking above still divides by the full context length, so which
+    // candidate wins does not change. Only the reported confidence drops
+    // committed tokens that never joined the chosen chain.
+    final fresh = freshCount == null
+        ? spoken.length
+        : math.min(math.max(freshCount, 0), spoken.length);
+    final committedInContext = m - math.min(fresh, m);
+    var unmatchedCommitted = 0;
+    for (var i = 0; i < committedInContext; i++) {
+      if (!inChain[i]) unmatchedCommitted++;
+    }
+    final denominator = m - unmatchedCommitted;
+
     return KaraokeMatch(
       wordIndex: _tokenWord[start + bestJ],
-      confidence: (score[bestI][bestJ] / m).clamp(0.0, 1.0),
+      confidence: denominator == 0
+          ? 0
+          : (score[bestI][bestJ] / denominator).clamp(0.0, 1.0),
       method: method,
       matchedCount: matchedCount,
       matchedText: matched.reversed.join(' '),
@@ -430,7 +454,8 @@ class KaraokeTrackResult {
 /// Partials are cumulative per recognizer session and may revise earlier
 /// words, so every partial replaces the previous one instead of being
 /// appended. Final results are committed; the next session's partials are
-/// matched together with the tail of the committed words.
+/// matched together with the tail of the committed words. Unmatched
+/// committed tokens do not reduce the confidence of the new partial.
 class KaraokeSpeechTracker {
   final KaraokeMatcher matcher;
   final KaraokeTrackerConfig config;
@@ -489,7 +514,7 @@ class KaraokeSpeechTracker {
     _lastPartial = text;
     final tokens = _withoutStaleTokens(tokenizeTurkish(text));
     if (tokens.isEmpty) return null;
-    return _track([..._committed, ...tokens], activeWordIndex);
+    return _track([..._committed, ...tokens], activeWordIndex, tokens.length);
   }
 
   /// Returns null for empty or repeated finals.
@@ -505,7 +530,7 @@ class KaraokeSpeechTracker {
     _committed = spoken.length > keep
         ? spoken.sublist(spoken.length - keep)
         : spoken;
-    return _track(spoken, activeWordIndex);
+    return _track(spoken, activeWordIndex, tokens.length);
   }
 
   /// Drops the stale prefix while [tokens] still belong to the same
@@ -522,8 +547,12 @@ class KaraokeSpeechTracker {
         : const [];
   }
 
-  KaraokeTrackResult _track(List<String> spoken, int active) {
-    final match = matcher.match(spoken, activeWordIndex: active);
+  KaraokeTrackResult _track(List<String> spoken, int active, int freshCount) {
+    final match = matcher.match(
+      spoken,
+      activeWordIndex: active,
+      freshCount: freshCount,
+    );
     final result = _decide(match, active);
     if (result.decision != KaraokeDecision.lowConfidence &&
         result.decision != KaraokeDecision.noMatch) {
@@ -534,7 +563,12 @@ class KaraokeSpeechTracker {
     if (++_lowConfidenceStreak < config.resyncAfterLowConfidence) {
       return result;
     }
-    final global = matcher.match(spoken, activeWordIndex: active, global: true);
+    final global = matcher.match(
+      spoken,
+      activeWordIndex: active,
+      global: true,
+      freshCount: freshCount,
+    );
     if (!_isStrong(global) || global.wordIndex == active) return result;
     _lowConfidenceStreak = 0;
     _backwardStreak = 0;

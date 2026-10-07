@@ -2,22 +2,19 @@ import 'package:drift/drift.dart' show Value;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:tiefprompt/core/utilities.dart';
-import 'package:tiefprompt/ui/widgets/safe_scaffold.dart';
+import 'package:cueline/ui/widgets/cueline_mark.dart';
+import 'package:cueline/ui/theme/cueline_tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:tiefprompt/core/constants.dart';
-import 'package:tiefprompt/core/debouncer.dart';
-import 'package:tiefprompt/models/app_state.drift.dart';
-import 'package:tiefprompt/providers/database_provider.dart';
-import 'package:tiefprompt/providers/feature_provider.dart';
-import 'package:tiefprompt/providers/prompter_provider.dart';
-import 'package:tiefprompt/providers/script_provider.dart';
-import 'package:tiefprompt/services/script_service.dart';
-import 'package:tiefprompt/ui/widgets/changelog_modal.dart';
-import 'package:tiefprompt/ui/widgets/wave_divider.dart';
+import 'package:cueline/core/debouncer.dart';
+import 'package:cueline/models/app_state.drift.dart';
+import 'package:cueline/providers/database_provider.dart';
+import 'package:cueline/providers/prompter_provider.dart';
+import 'package:cueline/providers/script_provider.dart';
+import 'package:cueline/services/script_service.dart';
+import 'package:cueline/ui/widgets/changelog_modal.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -78,13 +75,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .getSingle();
 
     await _checkChangelog(appState);
-    _checkHelpRequest(appState);
-  }
-
-  void _checkHelpRequest(AppStateModelData appState) {
-    if (!appState.helpRequestShown) {
-      context.push("/helprequest");
-    }
   }
 
   Future<void> _checkChangelog(AppStateModelData appState) async {
@@ -92,7 +82,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final packageInfo = await PackageInfo.fromPlatform();
     final currentVersion = packageInfo.version;
 
-    if (appStateVersion == currentVersion) return;
+    if (appStateVersion == null ||
+        appStateVersion.isEmpty ||
+        appStateVersion == currentVersion) {
+      if (appStateVersion != currentVersion) {
+        await ref
+            .read(databaseManagersProvider)
+            .appStateModel
+            .update((o) => o(lastSeenVersion: Value(currentVersion)));
+      }
+      return;
+    }
+    if (!mounted) return;
 
     await showChangelogModal(context);
 
@@ -137,180 +138,198 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    Future<PackageInfo> packageInfo = PackageInfo.fromPlatform();
+    final theme = Theme.of(context);
+    final tokens = CueLineTheme.of(context);
+    final isSaved = ref.watch(scriptProvider.select((s) => s.isSaved));
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
-    return SafeScaffold(
-      appBar: AppBar(title: Text(context.tr("title"))),
-      body: SingleChildScrollView(
+    return Scaffold(
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const WaveDivider(),
             Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              padding: const EdgeInsets.fromLTRB(
+                CueLineTokens.spaceLg,
+                CueLineTokens.spaceSm,
+                CueLineTokens.spaceSm,
+                CueLineTokens.spaceSm,
+              ),
+              child: Row(
                 children: [
-                  Text(
-                    context.tr("HomeScreen.TitleField_heading"),
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  const Expanded(child: CueLineMark()),
+                  IconButton(
+                    key: const Key("HomeScreen.IconButton_Settings"),
+                    icon: const Icon(Icons.settings_outlined),
+                    onPressed: () => context.push("/settings"),
+                    tooltip: context.tr("HomeScreen.IconButton_Settings"),
                   ),
-                  TextField(
-                    key: const Key("HomeScreen.TitleField"),
-                    keyboardType: TextInputType.text,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: context.tr("HomeScreen.TitleField_hintText"),
-                      hintStyle: TextStyle(fontStyle: FontStyle.italic),
-                    ),
-                    controller: _scriptTitleController,
-                    onChanged: (value) {
-                      ref.read(scriptProvider.notifier).setTitle(value);
-                      ref.read(scriptProvider.notifier).setIsSaved(false);
-                      if (ref.read(scriptProvider).ephemeral) {
-                        _scriptChangeDebouncer.run(_updateEphemeralScript);
-                      }
-                    },
-                  ),
-                  Text(
-                    context.tr("HomeScreen.TextField_heading") +
-                        (ref.watch(scriptProvider).isSaved ? "" : " *"),
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                  ),
-                  TextField(
-                    key: const Key("HomeScreen.TextField"),
-                    keyboardType: TextInputType.multiline,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: context.tr("HomeScreen.TextField_hintText"),
-                      hintStyle: TextStyle(fontStyle: FontStyle.italic),
-                    ),
-                    maxLines: (MediaQuery.of(context).size.height / 70).floor(),
-                    controller: _scriptTextController,
-                    onChanged: (value) {
-                      ref.read(scriptProvider.notifier).setText(value);
-                      ref.read(scriptProvider.notifier).setIsSaved(false);
-                      if (ref.read(scriptProvider).ephemeral) {
-                        _scriptChangeDebouncer.run(_updateEphemeralScript);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 16,
-                    runSpacing: 16,
-                    direction: Axis.horizontal,
-                    children: [
-                      ElevatedButton(
-                        key: const Key("HomeScreen.ElevatedButton_Start"),
-                        onPressed: () {
-                          ref.invalidate(prompterProvider);
-                          context.push('/teleprompter');
-                        },
-                        child: Text(
-                          context.tr("HomeScreen.ElevatedButton_Start"),
-                        ),
-                      ),
-                      ElevatedButton(
-                        key: const Key("HomeScreen.ElevatedButton_Select"),
-                        onPressed: () {
-                          if (ref.read(scriptProvider).isSaved) {
-                            context.push('/open_file');
-                          } else {
-                            _showDiscardConfirmDialog(
-                              () => context.push('/open_file'),
-                            );
-                          }
-                        },
-                        child: Text(
-                          context.tr("HomeScreen.ElevatedButton_Select"),
-                        ),
-                      ),
-                      ElevatedButton(
-                        key: const Key("HomeScreen.ElevatedButton_Save"),
-                        onPressed: () async {
-                          if (ref.read(scriptProvider).ephemeral) {
-                            _saveCurrentScript();
-                            ref
-                                .read(scriptServiceProvider.notifier)
-                                .createEphemeral();
-                          } else {
-                            await _showNewOrOverrideDialog();
-                          }
-                        },
-                        child: Text(
-                          context.tr('HomeScreen.ElevatedButton_Save'),
-                        ),
-                      ),
-                    ],
+                  IconButton(
+                    key: const Key("HomeScreen.IconButton_About"),
+                    icon: const Icon(Icons.info_outline),
+                    tooltip: context.tr("HomeScreen.IconButton_About"),
+                    onPressed: () => context.push('/about'),
                   ),
                 ],
               ),
             ),
-            Container(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                CueLineTokens.spaceLg,
+                0,
+                CueLineTokens.spaceLg,
+                CueLineTokens.spaceMd,
+              ),
+              child: Text(
+                context.tr("HomeScreen.Intro"),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: tokens.mutedText,
+                  height: 1.4,
+                ),
+              ),
+            ),
+            Padding(
               padding: const EdgeInsets.symmetric(
-                vertical: 12.0,
-                horizontal: 16.0,
+                horizontal: CueLineTokens.spaceLg,
+              ),
+              child: TextField(
+                key: const Key("HomeScreen.TitleField"),
+                keyboardType: TextInputType.text,
+                textInputAction: TextInputAction.next,
+                style: theme.textTheme.titleLarge,
+                decoration: InputDecoration(
+                  hintText: context.tr("HomeScreen.TitleField_hintText"),
+                  filled: false,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: CueLineTokens.spaceSm,
+                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                ),
+                controller: _scriptTitleController,
+                onChanged: (value) {
+                  ref.read(scriptProvider.notifier).setTitle(value);
+                  ref.read(scriptProvider.notifier).setIsSaved(false);
+                  if (ref.read(scriptProvider).ephemeral) {
+                    _scriptChangeDebouncer.run(_updateEphemeralScript);
+                  }
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: CueLineTokens.spaceLg,
+              ),
+              child: Divider(color: tokens.hairline, height: 1),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  CueLineTokens.spaceLg,
+                  CueLineTokens.spaceSm,
+                  CueLineTokens.spaceLg,
+                  CueLineTokens.spaceSm,
+                ),
+                child: TextField(
+                  key: const Key("HomeScreen.TextField"),
+                  keyboardType: TextInputType.multiline,
+                  textAlignVertical: TextAlignVertical.top,
+                  expands: true,
+                  maxLines: null,
+                  style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
+                  decoration: InputDecoration(
+                    hintText: context.tr("HomeScreen.TextField_hintText"),
+                    filled: false,
+                    alignLabelWithHint: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: CueLineTokens.spaceSm,
+                    ),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                  ),
+                  controller: _scriptTextController,
+                  onChanged: (value) {
+                    ref.read(scriptProvider.notifier).setText(value);
+                    ref.read(scriptProvider.notifier).setIsSaved(false);
+                    if (ref.read(scriptProvider).ephemeral) {
+                      _scriptChangeDebouncer.run(_updateEphemeralScript);
+                    }
+                  },
+                ),
+              ),
+            ),
+            if (!isSaved)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  CueLineTokens.spaceLg,
+                  0,
+                  CueLineTokens.spaceLg,
+                  CueLineTokens.spaceXs,
+                ),
+                child: Text(
+                  context.tr("HomeScreen.UnsavedHint"),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: tokens.mutedText,
+                  ),
+                ),
+              ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                CueLineTokens.spaceLg,
+                CueLineTokens.spaceSm,
+                CueLineTokens.spaceLg,
+                CueLineTokens.spaceMd + (bottomInset > 0 ? 0 : 4),
               ),
               child: Column(
-                spacing: 8.0,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _BuildVersionNote(),
+                  FilledButton.icon(
+                    key: const Key("HomeScreen.ElevatedButton_Start"),
+                    onPressed: _startPrompter,
+                    icon: const Icon(Icons.graphic_eq),
+                    label: Text(
+                      context.tr("HomeScreen.ElevatedButton_Start"),
+                    ),
+                  ),
+                  const SizedBox(height: CueLineTokens.spaceSm),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      IconButton(
-                        key: const Key("HomeScreen.IconButton_Settings"),
-                        icon: Icon(Icons.settings),
-                        onPressed: () => context.push("/settings"),
-                        tooltip: context.tr("HomeScreen.IconButton_Settings"),
+                      Expanded(
+                        child: TextButton(
+                          key: const Key("HomeScreen.ElevatedButton_Select"),
+                          onPressed: () {
+                            if (ref.read(scriptProvider).isSaved) {
+                              context.push('/open_file');
+                            } else {
+                              _showDiscardConfirmDialog(
+                                () => context.push('/open_file'),
+                              );
+                            }
+                          },
+                          child: Text(
+                            context.tr("HomeScreen.ElevatedButton_Select"),
+                          ),
+                        ),
                       ),
-                      IconButton(
-                        key: const Key("HomeScreen.IconButton_SourceCode"),
-                        icon: Icon(Icons.code),
-                        onPressed: () => launchUrlFromString(kRepoUrl),
-                        tooltip: context.tr("HomeScreen.IconButton_SourceCode"),
-                      ),
-                      FutureBuilder(
-                        future: packageInfo,
-                        builder: (buildContext, packageInfo) => IconButton(
-                          key: const Key("HomeScreen.IconButton_About"),
-                          icon: Icon(Icons.info),
-                          tooltip: context.tr("HomeScreen.IconButton_About"),
-                          onPressed: () => showAboutDialog(
-                            context: context,
-                            applicationName: context.tr("title"),
-                            applicationLegalese:
-                                "${context.tr("copyright")}\n${context.tr("credits")}",
-                            applicationVersion:
-                                "${packageInfo.data?.version} (Build ${packageInfo.data?.buildNumber})",
-                            children: [
-                              Padding(
-                                padding: EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  spacing: 8,
-                                  children: [
-                                    Text(
-                                      context.tr(
-                                        "AboutDialog.Text_PrivacyText",
-                                      ),
-                                    ),
-                                    ElevatedButton(
-                                      onPressed: () => launchUrlFromString(
-                                        kPrivacyPolicyUrl,
-                                      ),
-                                      child: Text(
-                                        context.tr(
-                                          "AboutDialog.ElevatedButton_Privacy",
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                      Expanded(
+                        child: TextButton(
+                          key: const Key("HomeScreen.ElevatedButton_Save"),
+                          onPressed: () async {
+                            if (ref.read(scriptProvider).ephemeral) {
+                              _saveCurrentScript();
+                              ref
+                                  .read(scriptServiceProvider.notifier)
+                                  .createEphemeral();
+                            } else {
+                              await _showNewOrOverrideDialog();
+                            }
+                          },
+                          child: Text(
+                            context.tr('HomeScreen.ElevatedButton_Save'),
                           ),
                         ),
                       ),
@@ -325,6 +344,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  void _startPrompter() {
+    if (ref.read(scriptProvider).text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.tr("HomeScreen.EmptyScript"))),
+      );
+      return;
+    }
+    ref.invalidate(prompterProvider);
+    context.push('/teleprompter');
+  }
+
   void _updateEphemeralScript() {
     final script = ref.read(scriptProvider);
     ref.read(scriptServiceProvider.notifier).saveEphemeral(script);
@@ -337,14 +367,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         title: Text(context.tr("HomeScreen.DiscardConfirmDialog.Title")),
         content: Text(context.tr("HomeScreen.DiscardConfirmDialog.Body")),
         actions: [
-          ElevatedButton(
+          TextButton(
             onPressed: () => context.pop(),
             child: Text(context.tr("HomeScreen.DiscardConfirmDialog.Cancel")),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onError,
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
             ),
             onPressed: () {
               context.pop();
@@ -363,17 +392,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       builder: (context) => AlertDialog(
         title: Text(context.tr("HomeScreen.NewOrOverrideDialog.Title")),
         actions: [
-          ElevatedButton(
+          TextButton(
             onPressed: () async {
               await _saveCurrentScriptAsNew();
-              context.pop();
+              if (context.mounted) context.pop();
             },
             child: Text(context.tr("HomeScreen.NewOrOverrideDialog.NewScript")),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () async {
               await _saveCurrentScript();
-              context.pop();
+              if (context.mounted) context.pop();
             },
             child: Text(
               context.tr("HomeScreen.NewOrOverrideDialog.OverrideScript"),
@@ -410,46 +439,5 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     scriptProviderNotifier.setId(savedScriptId);
 
     return savedScriptId;
-  }
-}
-
-class _BuildVersionNote extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final (:featureKind, :featureName) = ref.watch(
-      featuresProvider.select(
-        (f) => (featureKind: f.featureKind, featureName: f.featureName),
-      ),
-    );
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        ElevatedButton(
-          key: const Key("HomeScreen.ElevatedButton_FeaturePopup"),
-          onPressed: () {
-            showDialog(
-              context: context,
-              builder: (dialogContext) {
-                return AlertDialog(
-                  content: SingleChildScrollView(
-                    child: ref
-                        .read(featuresProvider.notifier)
-                        .getFeaturePopup()(dialogContext),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => dialogContext.pop(),
-                      child: Text(dialogContext.tr("HomeScreen.Understood")),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-          child: Text(context.tr(featureName)),
-        ),
-      ],
-    );
   }
 }

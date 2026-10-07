@@ -1,22 +1,24 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:tiefprompt/ui/widgets/safe_scaffold.dart';
+import 'package:cueline/ui/widgets/safe_scaffold.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tiefprompt/core/constants.dart';
-import 'package:tiefprompt/models/keybinding.dart';
-import 'package:tiefprompt/providers/banner_provider.dart';
-import 'package:tiefprompt/providers/talker_provider.dart';
-import 'package:tiefprompt/providers/keybinding_provider.dart';
-import 'package:tiefprompt/providers/settings_provider.dart';
-import 'package:tiefprompt/services/settings_storage_service.dart';
-import 'package:tiefprompt/ui/widgets/app_settings.dart';
-import 'package:tiefprompt/ui/widgets/async_settings_builder.dart';
+import 'package:cueline/core/constants.dart';
+import 'package:cueline/models/keybinding.dart';
+import 'package:cueline/providers/banner_provider.dart';
+import 'package:cueline/providers/talker_provider.dart';
+import 'package:cueline/providers/keybinding_provider.dart';
+import 'package:cueline/providers/settings_provider.dart';
+import 'package:cueline/services/settings_storage_service.dart';
+import 'package:cueline/ui/widgets/app_settings.dart';
+import 'package:cueline/ui/widgets/async_settings_builder.dart';
 
 class _ImportedSettingsJson extends Notifier<dynamic> {
   @override

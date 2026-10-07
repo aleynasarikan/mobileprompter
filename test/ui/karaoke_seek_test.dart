@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tiefprompt/services/karaoke_speech_follower.dart';
-import 'package:tiefprompt/services/speech_recognition_service.dart';
-import 'package:tiefprompt/ui/widgets/karaoke_text.dart';
+import 'package:cueline/services/karaoke_speech_follower.dart';
+import 'package:cueline/services/speech_recognition_service.dart';
+import 'package:cueline/ui/widgets/karaoke_text.dart';
 
 /// 50 distinct words that do not match each other fuzzily.
 const _words = [
@@ -348,6 +348,77 @@ void main() {
       await say(_w(29, 30));
       expect(follower.lastResult, isNotNull);
       expect(controller.activeWordIndex, 30);
+    });
+
+    testWidgets('rapid seeks keep the last position', (tester) async {
+      await setUpFollower(tester);
+      await readUpTo30();
+      for (var i = 0; i < 12; i++) {
+        controller.seek(i.isEven ? 8 : 40);
+      }
+      expect(controller.activeWordIndex, 40);
+      startSession();
+      await say(_w(41));
+      expect(controller.activeWordIndex, 41);
+    });
+
+    testWidgets('seek to the beginning and the end', (tester) async {
+      await setUpFollower(tester);
+      await readUpTo30();
+      controller.seek(-1);
+      startSession();
+      await say(_w(0));
+      expect(controller.activeWordIndex, 0);
+
+      controller.seek(_words.length - 1);
+      startSession();
+      await say(_w(_words.length - 1), isFinal: true);
+      expect(controller.activeWordIndex, _words.length - 1);
+    });
+
+    testWidgets('seek beyond the script clamps', (tester) async {
+      await pumpText(tester);
+      controller.seek(9999);
+      expect(controller.activeWordIndex, _words.length - 1);
+      controller.seek(-20);
+      expect(controller.activeWordIndex, -1);
+    });
+
+    testWidgets('delayed old final after seek does not pull back', (
+      tester,
+    ) async {
+      await setUpFollower(tester);
+      controller.seek(25);
+      await say(_w(26, 28));
+      controller.seek(5);
+      await say(_w(26, 28), isFinal: true);
+      expect(controller.activeWordIndex, 5);
+      startSession();
+      await say(_w(6, 8), isFinal: true);
+      expect(controller.activeWordIndex, 8);
+    });
+
+    testWidgets('follower dispose drops later speech events', (tester) async {
+      await pumpText(tester);
+      final localEvents = StreamController<SpeechRecognitionEvent>.broadcast(
+        sync: true,
+      );
+      final localFollower = KaraokeSpeechFollower(
+        controller: controller,
+        events: localEvents.stream,
+      );
+      controller.speechMode = true;
+      controller.seek(10);
+      localEvents.add(
+        SpeechResult(text: _w(11), isFinal: false, confidence: 1),
+      );
+      expect(controller.activeWordIndex, 11);
+      localFollower.dispose();
+      localEvents.add(
+        const SpeechResult(text: 'masa sandalye', isFinal: true, confidence: 1),
+      );
+      expect(controller.activeWordIndex, 11);
+      await localEvents.close();
     });
   });
 }

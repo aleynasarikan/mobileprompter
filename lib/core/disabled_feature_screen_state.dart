@@ -1,4 +1,4 @@
-import 'package:tiefprompt/core/constants.dart';
+import 'package:cueline/core/constants.dart';
 
 class DisabledFeatureScreenRouterExtra {
   final Feature? feature;

@@ -5,10 +5,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tiefprompt/services/karaoke_speech_follower.dart';
-import 'package:tiefprompt/services/speech_recognition_service.dart';
-import 'package:tiefprompt/ui/widgets/karaoke_text.dart';
-import 'package:tiefprompt/ui/widgets/scrollable_text.dart';
+import 'package:cueline/services/karaoke_speech_follower.dart';
+import 'package:cueline/services/speech_recognition_service.dart';
+import 'package:cueline/ui/widgets/karaoke_text.dart';
+import 'package:cueline/ui/widgets/scrollable_text.dart';
 
 // Word indices: 10 teşekkür, 11 ederim, 21 olacak, 26 isterim, 27 Bugün,
 // 31 hakkında, 35 vereceğim, 61 geçelim.

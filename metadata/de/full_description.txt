@@ -1,7 +1,5 @@
-TiefPrompt ist eine außergewöhnlich einfache Teleprompter-App für Kreative, Vortragende und Profis.
+CueLine ist ein Teleprompter, der deiner Stimme folgt.
 
-Lade dein Skript aus einer Datei oder füge es direkt ein, und steuere die Wiedergabe mit Abspielen, Pause, Geschwindigkeitsanpassung und Spiegelungsoptionen.
+Skript einfügen, Probe starten, sprechen. CueLine hebt das aktuelle Wort hervor und scrollt mit.
 
-TiefPrompt ist Open Source und plattformübergreifend verfügbar. Perfekt für Videoaufnahmen, Live-Präsentationen und Redetraining.
-
-Voll ausgestattet mit anpassbaren Schriftarten, individuellen Farben und frei belegbaren Tastenkombinationen. Übernimm die volle Kontrolle über deinen Teleprompter mit einer ablenkungsfreien Oberfläche.
+Wenn Spracherkennung nicht verfügbar ist, wechselt die App zum automatischen Scrollen. Skripte bleiben auf diesem Gerät.

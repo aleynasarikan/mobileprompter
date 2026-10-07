@@ -1,4 +1,4 @@
-import 'package:tiefprompt/providers/settings_provider.dart';
+import 'package:cueline/providers/settings_provider.dart';
 
 class SettingsFake extends Settings {
   final SettingsState settings;

@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart' hide Table;
 import 'package:flutter/services.dart';
-import 'package:tiefprompt/core/fonts.dart';
-import 'package:tiefprompt/models/custom_font_model.drift.dart';
+import 'package:cueline/core/fonts.dart';
+import 'package:cueline/models/custom_font_model.drift.dart';
 
 class CustomFontModel extends Table {
   IntColumn get id => integer().autoIncrement()();

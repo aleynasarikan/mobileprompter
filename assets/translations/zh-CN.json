@@ -1,15 +1,24 @@
 {
-  "title": "TiefPrompt 提词器",
+  "title": "CueLine 提词器",
   "empty_title": "新的稿子",
-  "copyright": "Lena Tauchner 享有软件的著作权\n\n软件分发协议：MIT License\n查看项目附带的LICENSE文档了解更多\n",
+  "copyright": "CueLine 基于 Lena Tauchner 的 TiefPrompt（MIT 许可）。\n原始版权 © Lena Tauchner。详见 LICENSE。\n",
   "credits": "感谢以下贡献者提供软件的翻译\n中文翻译： @TaoEngine",
   "AboutDialog": {
-    "Text_PrivacyText": "隐私政策简要：\n本软件承诺不会向第三方平台传输您的所有数据，不会收集您的个人信息，并且不会分析您的内容个性化喜好；\n您在使用本软件前须仔细阅读隐私政策并经过同意才能使用；\n详细的隐私政策及变动信息请参考作者的官方网站。",
-    "ElevatedButton_Privacy": "查看隐私政策"
+    "Text_PrivacyText": "CueLine 仅在播放时使用麦克风和系统语音识别。应用不会保存录音。",
+    "Text_PrivacyBody": "CueLine is a local teleprompter. Scripts you type or open are stored on this device.\n\nMicrophone access is used only while you tap Play, so the app can follow the words you speak and scroll the script. When you stop playback or leave the teleprompter, listening stops.\n\nSpeech recognition is provided by the operating system (for example Google speech services on Android, or Apple speech recognition on iOS). CueLine does not send audio to its own servers. The system recognizer may use a network connection when an offline language pack is not installed.\n\nCueLine does not create user accounts and does not include advertising or analytics SDKs of its own.",
+    "ElevatedButton_Privacy": "隐私"
+  },
+  "AboutScreen": {
+    "title": "关于",
+    "tagline": "跟随语音的提词器，适合排练和录制。",
+    "version": "版本 {}",
+    "licenses": "许可"
   },
   "HomeScreen": {
     "TextField_hintText": "输入需要提词的稿子",
-    "ElevatedButton_Start": "我要读稿了",
+    "Intro": "粘贴稿件，开始排练并朗读。CueLine 会跟随你的词。",
+    "UnsavedHint": "未保存的更改",
+    "ElevatedButton_Start": "开始排练",
     "ElevatedButton_Select": "选择保存过的提词",
     "ElevatedButton_Save": "保存本次提词",
     "IconButton_Settings": "提词器设置",
@@ -23,6 +32,14 @@
   },
   "SettingsScreen": {
     "title": "提词器设置",
+    "Section_Appearance": "外观",
+    "Section_Prompter": "提词器",
+    "Section_About": "关于",
+    "ThemeMode": {
+      "system": "跟随系统",
+      "light": "浅色",
+      "dark": "深色"
+    },
     "NumberAppSetting": {
       "Value": "输入一个数",
       "ElevatedButton_Save": "保存设置"

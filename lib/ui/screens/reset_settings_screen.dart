@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tiefprompt/core/constants.dart';
-import 'package:tiefprompt/providers/settings_provider.dart';
-import 'package:tiefprompt/ui/widgets/safe_scaffold.dart';
+import 'package:cueline/core/constants.dart';
+import 'package:cueline/providers/settings_provider.dart';
+import 'package:cueline/ui/widgets/safe_scaffold.dart';
 
 const _defaultResetTitle = "Something went wrong";
 const _defaultResetMessage =
