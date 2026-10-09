@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cueline/services/creator_mode.dart';
-import 'package:cueline/services/creator_overlay.dart';
+
+import '../helpers/fake_overlay.dart';
 
 void main() {
   group('planCreatorSync', () {
@@ -66,7 +67,7 @@ void main() {
   group('CreatorMode', () {
     test('follows the stage script and then only the active word', () async {
       final source = _Source();
-      final overlay = _FakeOverlay();
+      final overlay = FakeOverlay();
       final mode = CreatorMode(overlay);
       addTearDown(mode.dispose);
 
@@ -93,7 +94,7 @@ void main() {
     });
 
     test('uses fallback words until the stage script exists', () async {
-      final overlay = _FakeOverlay();
+      final overlay = FakeOverlay();
       final mode = CreatorMode(overlay);
       addTearDown(mode.dispose);
 
@@ -106,7 +107,7 @@ void main() {
 
     test('hide stops further updates', () async {
       final source = _Source();
-      final overlay = _FakeOverlay();
+      final overlay = FakeOverlay();
       final mode = CreatorMode(overlay);
       addTearDown(mode.dispose);
       mode.attach(
@@ -139,39 +140,5 @@ class _Source extends ChangeNotifier {
   void replace(List<String> next) {
     words = next;
     notifyListeners();
-  }
-}
-
-class _FakeOverlay implements CreatorOverlayApi {
-  final shows = <({List<String> words, int index, bool mic})>[];
-  final updates = <int>[];
-  var hides = 0;
-
-  @override
-  Future<bool> canDrawOverlays() async => true;
-
-  @override
-  Future<void> openOverlaySettings() async {}
-
-  @override
-  Future<bool> isRunning() async => false;
-
-  @override
-  Future<void> show({
-    required List<String> words,
-    required int activeWordIndex,
-    required bool useMicrophone,
-  }) async {
-    shows.add((words: words, index: activeWordIndex, mic: useMicrophone));
-  }
-
-  @override
-  Future<void> update(int activeWordIndex) async {
-    updates.add(activeWordIndex);
-  }
-
-  @override
-  Future<void> hide() async {
-    hides++;
   }
 }

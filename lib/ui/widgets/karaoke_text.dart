@@ -633,10 +633,12 @@ class _KaraokeTextState extends State<KaraokeText> {
       return;
     }
     if ((destination - position.pixels).abs() < 1) return;
+    // Short enough to settle before the next word arrives (~250 ms at
+    // normal speaking pace), so the scroll does not trail the voice.
     position.animateTo(
       destination,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
+      duration: const Duration(milliseconds: 160),
+      curve: Curves.easeOutCubic,
     );
   }
 

@@ -30,8 +30,11 @@ class TiefPromptRouter extends _$TiefPromptRouter {
         GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
         GoRoute(
           path: '/teleprompter',
-          builder: (context, state) =>
-              const PrompterThemeScope(child: PrompterScreen()),
+          builder: (context, state) => PrompterThemeScope(
+            child: PrompterScreen(
+              startFloating: state.uri.queryParameters['mode'] == 'floating',
+            ),
+          ),
         ),
         GoRoute(
           path: '/open_file',

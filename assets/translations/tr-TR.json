@@ -1,12 +1,12 @@
 {
-  "title": "CueLine",
+  "title": "Mobile Prompter",
   "empty_title": "Adsız metin",
-  "copyright": "CueLine, Lena Tauchner’in MIT lisanslı TiefPrompt projesine dayanır.\nOrijinal telif hakkı © Lena Tauchner. Ayrıntılar için LICENSE dosyasına bakın.\n",
+  "copyright": "Mobile Prompter, Lena Tauchner’in MIT lisanslı TiefPrompt projesine dayanır.\nOrijinal telif hakkı © Lena Tauchner. Ayrıntılar için LICENSE dosyasına bakın.\n",
   "credits": "Orijinal yazılımın çevirilerine katkıda bulunanlar:\n Çince: @TaoEngine\n Rusça: @Xapitonov\n Arapça: @shadigaafar",
   "ProFeatureDisabled": "Bu özellik yalnızca Pro sürümünde kullanılabilir.",
   "AboutDialog": {
-    "Text_PrivacyText": "CueLine mikrofonu ve cihazın konuşma tanımasını yalnızca oynatma sırasında kullanır. Uygulama kayıt tutmaz.",
-    "Text_PrivacyBody": "CueLine yerel bir teleprompterdır. Yazdığınız veya açtığınız metinler bu cihazda saklanır.\n\nMikrofon erişimi yalnızca Oynat’a bastığınızda, konuştuğunuz kelimeleri takip etmek ve metni kaydırmak için kullanılır. Oynatmayı durdurunca veya teleprompterden çıkınca dinleme durur.\n\nKonuşma tanımayı işletim sistemi sağlar (Android’de Google, iOS’ta Apple). CueLine sesi kendi sunucularına göndermez. Çevrimdışı dil paketi yoksa sistem tanıması ağ bağlantısı kullanabilir.\n\nCueLine hesap oluşturmaz; kendi reklam veya analitik SDK’sını içermez.",
+    "Text_PrivacyText": "Mobile Prompter mikrofonu ve cihazın konuşma tanımasını yalnızca oynatma sırasında kullanır. Uygulama kayıt tutmaz.",
+    "Text_PrivacyBody": "Mobile Prompter yerel bir teleprompterdır. Yazdığınız veya açtığınız metinler bu cihazda saklanır.\n\nMikrofon erişimi yalnızca Oynat’a bastığınızda, konuştuğunuz kelimeleri takip etmek ve metni kaydırmak için kullanılır. Oynatmayı durdurunca veya teleprompterden çıkınca dinleme durur.\n\nAndroid’de yüzen prompter’ı açabilirsiniz: başka bir uygulamada video çekerken metni okuyabilmeniz için diğer uygulamaların üzerinde küçük bir Mobile Prompter penceresi. Bu sırada Mobile Prompter arka plandayken de dinleme sürer; Android mikrofon göstergesi ve Mobile Prompter bildirimi görünür. Pencere yalnızca metninizi gösterir; Mobile Prompter diğer uygulamaları görmez veya kaydetmez, hiçbir şey kaydedilmez.\n\nKonuşma tanımayı işletim sistemi sağlar (Android’de Google, iOS’ta Apple). Mobile Prompter sesi kendi sunucularına göndermez. Çevrimdışı dil paketi yoksa sistem tanıması ağ bağlantısı kullanabilir.\n\nMobile Prompter hesap oluşturmaz; kendi reklam veya analitik SDK’sını içermez.",
     "ElevatedButton_Privacy": "Gizlilik"
   },
   "AboutScreen": {
@@ -24,7 +24,7 @@
     "TitleField_hintText": "İsteğe bağlı başlık",
     "TextField_heading": "Metin",
     "TextField_hintText": "Metni yapıştırın veya yazın",
-    "Intro": "Metni yapıştırın, provayı başlatın ve konuşun. CueLine kelimelerinizi takip eder.",
+    "Intro": "Metninizi yapıştırın ve nasıl konuşacağınızı seçin. Mobile Prompter kelimelerinizi takip eder.",
     "EmptyScript": "Teleprompteri başlatmadan önce bir metin ekleyin.",
     "UnsavedHint": "Kaydedilmemiş değişiklikler",
     "ElevatedButton_Start": "Prova başlat",
@@ -49,7 +49,20 @@
       "NewScript": "Yeni metin olarak kaydet",
       "OverrideScript": "Üzerine yaz"
     },
-    "Understood": "Anladım"
+    "Understood": "Anladım",
+    "Mode": {
+      "Live": {
+        "Title": "Canlı konuşma",
+        "Subtitle": "Tam ekran prompter, metin sesinizle birlikte akar"
+      },
+      "Apps": {
+        "Title": "Kamera ve uygulamalarla konuş",
+        "Subtitle": "Kamera, TikTok, Instagram veya YouTube üzerinde yüzen panel"
+      }
+    },
+    "Stats": "{words} kelime · ~{duration}",
+    "DurationMinutes": "{m} dk {s} sn",
+    "DurationSeconds": "{s} sn"
   },
   "SettingsScreen": {
     "title": "Ayarlar",
@@ -179,7 +192,7 @@
         "Content": "Bir dosya seçin. Bu işlem mevcut ayarların üzerine yazmaz; yeni bir profil ekler.",
         "Cancel": "Vazgeç",
         "Import": "Dosya seç",
-        "InvalidVersion": "Geçersiz şema sürümü. Bu CueLine sürümüne ait bir ayar dosyası kullanın."
+        "InvalidVersion": "Geçersiz şema sürümü. Bu Mobile Prompter sürümüne ait bir ayar dosyası kullanın."
       },
       "SaveDialog": {
         "Title": "Ayar profilini kaydet",
@@ -267,6 +280,22 @@
       "IconButton_ShowCurrentChapter": "Geçerli bölüm",
       "Slider_SideMargin": "Yan boşluk",
       "Slider_Countdown": "Geri sayım"
+    },
+    "Floating": {
+      "button": "Yüzen prompter",
+      "stop": "Yüzen prompter'ı kapat",
+      "permissionTitle": "Mobile Prompter'ı diğer uygulamaların üzerinde göster",
+      "permissionBody": "TikTok, Instagram, YouTube veya kamerada video çekerken metninin ekranda kalması için Mobile Prompter'ın diğer uygulamaların üzerinde gösterim iznine ihtiyacı var.\n\nYalnızca Mobile Prompter'ın küçük prompter penceresi gösterilir. Mobile Prompter diğer uygulamaları görmez, kaydetmez ve okumaz.",
+      "notNow": "Şimdi değil",
+      "openSettings": "Ayarları aç",
+      "unsupported": "Yüzen prompter yalnızca Android'de kullanılabilir.",
+      "microphoneRequired": "Yüzen prompter sesini takip eder. Önce prompter'ı bir kez başlatıp mikrofon iznini ver.",
+      "failed": "Yüzen prompter başlatılamadı.",
+      "notificationTitle": "Mobile Prompter yüzen prompter",
+      "notificationText": "Metnin takip ediliyor. Mobile Prompter'a dönmek için dokun.",
+      "play": "Oynat",
+      "pause": "Duraklat",
+      "close": "Kapat ve Mobile Prompter'a dön"
     }
   },
   "OpenFileScreen": {

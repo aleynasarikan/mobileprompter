@@ -1,8 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cueline/core/constants.dart';
 import 'package:cueline/providers/script_provider.dart';
 import 'package:cueline/ui/theme/cueline_tokens.dart';
+import 'package:cueline/ui/widgets/floating_prompter_button.dart';
 
 /// Height of the portrait top bar below the status-bar inset.
 const double kPortraitTopBarBodyHeight = 48;
@@ -23,7 +25,10 @@ class PrompterTopBar extends ConsumerWidget {
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final tokens = CueLineTheme.of(context);
     final topInset = MediaQuery.viewPaddingOf(context).top;
-    final title = script.title ?? context.tr("empty_title");
+    // The stored default name is English; show the localized one instead.
+    final title = script.title == null || script.title == kNewScriptName
+        ? context.tr("empty_title")
+        : script.title!;
 
     return Positioned(
       top: 0,
@@ -58,6 +63,7 @@ class PrompterTopBar extends ConsumerWidget {
                     ),
                   ),
                 ),
+                const FloatingPrompterButton(),
               ],
             ),
           ),

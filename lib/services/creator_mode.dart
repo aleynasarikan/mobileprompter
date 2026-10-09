@@ -59,6 +59,7 @@ class CreatorMode extends ChangeNotifier {
 
   bool isVisible = false;
   bool _useMicrophone = false;
+  Map<String, String> _labels = const {};
   int _generation = 0;
   List<String>? _sentWords;
   int? _sentIndex;
@@ -114,8 +115,12 @@ class CreatorMode extends ChangeNotifier {
     _enqueue(_syncBody);
   }
 
-  Future<void> show({required bool useMicrophone}) {
+  Future<void> show({
+    required bool useMicrophone,
+    Map<String, String> labels = const {},
+  }) {
     _useMicrophone = useMicrophone;
+    _labels = labels;
     if (!isVisible) {
       isVisible = true;
       notifyListeners();
@@ -168,11 +173,15 @@ class CreatorMode extends ChangeNotifier {
       case CreatorSyncKind.none:
         return;
       case CreatorSyncKind.show:
-        KaraokeTimingLog.overlay(kind: 'show', activeWordIndex: plan.activeWordIndex);
+        KaraokeTimingLog.overlay(
+          kind: 'show',
+          activeWordIndex: plan.activeWordIndex,
+        );
         await _overlay.show(
           words: words,
           activeWordIndex: plan.activeWordIndex,
           useMicrophone: _useMicrophone,
+          labels: _labels,
         );
       case CreatorSyncKind.update:
         try {
@@ -191,6 +200,7 @@ class CreatorMode extends ChangeNotifier {
             words: words,
             activeWordIndex: plan.activeWordIndex,
             useMicrophone: _useMicrophone,
+            labels: _labels,
           );
         }
     }

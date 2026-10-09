@@ -129,7 +129,7 @@ class KaraokeMatcherConfig {
     this.lookAhead = 40,
     this.initialWindow = 50,
     this.spokenContext = 5,
-    this.maxScriptSkip = 3,
+    this.maxScriptSkip = 5,
     this.maxSpokenSkip = 2,
     this.scriptSkipPenalty = 0.15,
     this.foldedSimilarity = 0.9,

@@ -1,12 +1,12 @@
 {
-  "title": "CueLine",
+  "title": "Mobile Prompter",
   "empty_title": "Stateless Script",
-  "copyright": "CueLine is based on TiefPrompt by Lena Tauchner, licensed under the MIT License.\nOriginal copyright © Lena Tauchner. See LICENSE for details.\n",
+  "copyright": "Mobile Prompter is based on TiefPrompt by Lena Tauchner, licensed under the MIT License.\nOriginal copyright © Lena Tauchner. See LICENSE for details.\n",
   "credits": "A hearty thanks t’ the fine crew who lent their tongues t’ translate this here software!\n Chinese: @TaoEngine\n Russian: @Xapitonov\n Arabic: @shadigaafar",
   "ProFeatureDisabled": "Yer may needa pay up ter use this!",
   "AboutDialog": {
-    "Text_PrivacyText": "CueLine uses the microphone and the on-device speech recognizer only while playback is running. The app does not keep recordings.",
-    "Text_PrivacyBody": "CueLine is a local teleprompter. Scripts you type or open are stored on this device.\n\nMicrophone access is used only while you tap Play, so the app can follow the words you speak and scroll the script. When you stop playback or leave the teleprompter, listening stops.\n\nSpeech recognition is provided by the operating system (for example Google speech services on Android, or Apple speech recognition on iOS). CueLine does not send audio to its own servers. The system recognizer may use a network connection when an offline language pack is not installed.\n\nCueLine does not create user accounts and does not include advertising or analytics SDKs of its own.",
+    "Text_PrivacyText": "Mobile Prompter uses the microphone and the on-device speech recognizer only while playback is running. The app does not keep recordings.",
+    "Text_PrivacyBody": "Mobile Prompter is a local teleprompter. Scripts you type or open are stored on this device.\n\nMicrophone access is used only while you tap Play, so the app can follow the words you speak and scroll the script. When you stop playback or leave the teleprompter, listening stops.\n\nSpeech recognition is provided by the operating system (for example Google speech services on Android, or Apple speech recognition on iOS). Mobile Prompter does not send audio to its own servers. The system recognizer may use a network connection when an offline language pack is not installed.\n\nMobile Prompter does not create user accounts and does not include advertising or analytics SDKs of its own.",
     "ElevatedButton_Privacy": "Privacy"
   },
   "AboutScreen": {
@@ -17,7 +17,7 @@
   },
   "HomeScreen": {
     "TextField_hintText": "Provide yer speech",
-    "Intro": "Paste yer script, start a rehearsal, and speak. CueLine follows yer words.",
+    "Intro": "Paste yer script, start a rehearsal, and speak. Mobile Prompter follows yer words.",
     "UnsavedHint": "Unsaved changes",
     "ElevatedButton_Start": "Start rehearsal",
     "ElevatedButton_Select": "Catch'r speech of the depths",
@@ -36,7 +36,7 @@
     "FossVersion": "Unsigned Charter",
     "FossVersion_Explanation": "We are a free and open source project. That calls for freedom! Us pirates, we love that. Yer don' needa pay - ever! But! We got'a pay port fees, 'n the crew, 'n the all, yer know? If yer can - borrow us your treasures? We ar'n't givin' em back, but yer can feel good! You can find current links at the Source Code Repository.",
     "FreeVersion": "Half Sunk Ship Version",
-    "FreeVersion_Explanation": "Arr! Us is a real project with real crew, and port costs, and 'er ale ar'n't payin' itself. CueLine is free and open source - yer don't needa pay but... Well, yer know how pirating goes. Yer boat takes damage, and yer don' wanna steal them cannon balls. Trust us on that... So, to use all there features, yer needa upgrade.\n\nIf yer can't pay or are in the mood for some privateering, yer free to - source is open.\n\nI wish I hadn't needed ter hold this ransom but alas.",
+    "FreeVersion_Explanation": "Arr! Us is a real project with real crew, and port costs, and 'er ale ar'n't payin' itself. Mobile Prompter is free and open source - yer don't needa pay but... Well, yer know how pirating goes. Yer boat takes damage, and yer don' wanna steal them cannon balls. Trust us on that... So, to use all there features, yer needa upgrade.\n\nIf yer can't pay or are in the mood for some privateering, yer free to - source is open.\n\nI wish I hadn't needed ter hold this ransom but alas.",
     "PaidVersion": "Glamorous Ship Version",
     "PaidVersion_Explanation": "Arr! Yer paid! Thank yer, it means a world to us. Yer not just making the ship pretty, yer helping the ship continue to sail, and become more glorious!\n\nThank yer. Now, mateys, we're got som' ale to drink.",
     "TitleField_heading": "Yer scriptes name",
@@ -178,7 +178,7 @@
         "Content": "Choose yer file ter pull tere settin's from. Note that yer not gonna override current settings, but add 'em as a new profile.",
         "Cancel": "Abort",
         "Import": "Choose yer File",
-        "InvalidVersion": "Yer Schema Version was not fine. Use a Schema from this here CueLine version."
+        "InvalidVersion": "Yer Schema Version was not fine. Use a Schema from this here Mobile Prompter version."
       },
       "SaveDialog": {
         "Title": "Store yer Settin's Profile",
@@ -231,8 +231,8 @@
   },
   "HelpRequestScreen": {
     "Title": "Lend 'e Crew Yer Aid!",
-    "Abstract": "Short 'n sweet: CueLine be a crew-built 'n funded ship. Bein' FOSS means all hands can help - but alas, there be costs t' buildin' 'n settin' sail with an app. Aside our time, 'e Apple tax be real. Contributin' t' the crew really helps. I spin the tale below, but check out 'e GitHub if yer wanna lend a hand.",
-    "ElaborateExplanation": "Yer readin' on already means yer be interested in our ship, so let me catch yer up. CueLine be a teleprompter app without ads, trackin', or any such treasure-grabbin' means most apps resort ter. That means we're fully reliant on 'e purchases of CueLine Pro, as well as donations.\n\nSince 'e crew sinks a lot of time 'n doubloons int' providin' this here app (e.g. lawyers ter write a privacy policy, Apple Tax, 'n so on), we decided on two means of gettin' gold - one be, obviously, 'e In-App Purchases on iOS 'n Android. If yer've downloaded this here app from Google Play or 'e Apple App Store, yer'll notice that some features be indeed locked up. That be a side effect of Apple requirin' developers t' own an Apple device - somethin' we had ter specifically acquire fer this here ship - 'n a yearly payment fer 'e privilege of settin' an app t' sail.\n\nBut! This here app also sails free. Yer may be wonderin' how that be possible, seein' as I just explained how totally not free this here app be - but if yer look at 'e link above, this here app be, indeed, fully open-source. Yer allowed t' use, modify, sell, or really do whatever with this here app. 'N it be free as grog if yer download it from F-Droid or GitHub, or simply compile it yerself.\n\nThat's why we don't only have an In-App Purchase option, but also donation links. If yer usin' the app how it was initially envisioned - that is, freely - we ask of yer that yer consider donatin'. No hard feelings if yer don't, we know the financial realities, but it be a way to support 'e crew.\n\nAside that, buildin' an app obviously requires time. Developin', sortin' issues, plannin' voyages - all of this, while bein' a grand adventure, be a strain on 'e crew. So if yer can't or don't wanna donate or pay fer 'e app, how about yer contribute t' the ship!\n\nHow ter contribute, yer ask? Well, one way be simply givin' feedback. Be there a feature missin'? Be 'e app buggy? Simply tell us, 'n we'll make her better!\n\nAnother way t' contribute be obviously ter provide code. If yer be able, we'd appreciate any help on gettin' Issues down, makin' new features 'n fixin' bugs. We're all just sailors, 'n yer support would be a great boon.\n\nLastly, there be translations. We provide this here app in many tongues, but there be always another tongue, a translation error, or simply a small typo ter fix. Yer can find how ter help makin' translations of this here app better in 'e GitHub repo, 'n we really do appreciate any help on that front as well.\n\n'N now, a personal note from 'e captain, because yer just read through me prose 'n yer deserve it: Thank yer. Thank yer for considerin' this here app, downloadin' it, readin' this, 'n so on. I really do appreciate yer all immensely. Seein' a ship actually be sailed be validatin' 'n it makes me glad that I'm not alone here. So, one last time: Thank yer.\n\nNow ter 'e last thing, there be links below, click 'em ter find out more.\n\nBest, Lena",
+    "Abstract": "Short 'n sweet: Mobile Prompter be a crew-built 'n funded ship. Bein' FOSS means all hands can help - but alas, there be costs t' buildin' 'n settin' sail with an app. Aside our time, 'e Apple tax be real. Contributin' t' the crew really helps. I spin the tale below, but check out 'e GitHub if yer wanna lend a hand.",
+    "ElaborateExplanation": "Yer readin' on already means yer be interested in our ship, so let me catch yer up. Mobile Prompter be a teleprompter app without ads, trackin', or any such treasure-grabbin' means most apps resort ter. That means we're fully reliant on 'e purchases of Mobile Prompter Pro, as well as donations.\n\nSince 'e crew sinks a lot of time 'n doubloons int' providin' this here app (e.g. lawyers ter write a privacy policy, Apple Tax, 'n so on), we decided on two means of gettin' gold - one be, obviously, 'e In-App Purchases on iOS 'n Android. If yer've downloaded this here app from Google Play or 'e Apple App Store, yer'll notice that some features be indeed locked up. That be a side effect of Apple requirin' developers t' own an Apple device - somethin' we had ter specifically acquire fer this here ship - 'n a yearly payment fer 'e privilege of settin' an app t' sail.\n\nBut! This here app also sails free. Yer may be wonderin' how that be possible, seein' as I just explained how totally not free this here app be - but if yer look at 'e link above, this here app be, indeed, fully open-source. Yer allowed t' use, modify, sell, or really do whatever with this here app. 'N it be free as grog if yer download it from F-Droid or GitHub, or simply compile it yerself.\n\nThat's why we don't only have an In-App Purchase option, but also donation links. If yer usin' the app how it was initially envisioned - that is, freely - we ask of yer that yer consider donatin'. No hard feelings if yer don't, we know the financial realities, but it be a way to support 'e crew.\n\nAside that, buildin' an app obviously requires time. Developin', sortin' issues, plannin' voyages - all of this, while bein' a grand adventure, be a strain on 'e crew. So if yer can't or don't wanna donate or pay fer 'e app, how about yer contribute t' the ship!\n\nHow ter contribute, yer ask? Well, one way be simply givin' feedback. Be there a feature missin'? Be 'e app buggy? Simply tell us, 'n we'll make her better!\n\nAnother way t' contribute be obviously ter provide code. If yer be able, we'd appreciate any help on gettin' Issues down, makin' new features 'n fixin' bugs. We're all just sailors, 'n yer support would be a great boon.\n\nLastly, there be translations. We provide this here app in many tongues, but there be always another tongue, a translation error, or simply a small typo ter fix. Yer can find how ter help makin' translations of this here app better in 'e GitHub repo, 'n we really do appreciate any help on that front as well.\n\n'N now, a personal note from 'e captain, because yer just read through me prose 'n yer deserve it: Thank yer. Thank yer for considerin' this here app, downloadin' it, readin' this, 'n so on. I really do appreciate yer all immensely. Seein' a ship actually be sailed be validatin' 'n it makes me glad that I'm not alone here. So, one last time: Thank yer.\n\nNow ter 'e last thing, there be links below, click 'em ter find out more.\n\nBest, Lena",
     "ReadMore": "Read 'em more",
     "Continue": "Set Course fer 'e App"
   },
@@ -246,7 +246,7 @@
     "RestorePurchases": "Get back yer loot",
     "BuyPro": "Pay for t'is",
     "BuyRequest": {
-      "Generic": "## Considering upgrading?\n\nThis is the free version of CueLine, and every Pro feature is one tap away.",
+      "Generic": "## Considering upgrading?\n\nThis is the free version of Mobile Prompter, and every Pro feature is one tap away.",
       "appLanguage": "## App Language\n\nChange the localization of the app.",
       "appTheme": "## App Theme\n\nSwitch between light, dark, and custom themes to suit your studio.",
       "primaryAppColor": "## Accent Color\n\nPersonalize the app with your own primary color.",
@@ -270,10 +270,10 @@
       "markdown": "## Markdown Formatting\n\nWrite headings, bold, italics, and underlines and see them rendered live in your script.",
       "settingsRestore": "## Save & Restore Settings\n\nSave your prompter setups as profiles and bring them back on any device.",
       "controlButtons": "## Control Buttons\n\nOn-screen controls for simpler operation.",
-      "showHelpRequest": "## Support CueLine\n\nLearn how you can help keep CueLine alive and growing.",
+      "showHelpRequest": "## Support Mobile Prompter\n\nLearn how you can help keep Mobile Prompter alive and growing.",
       "ephemeralScript": "## Quick Script\n\nStart prompting instantly without saving a script first.",
       "currentChapter": "## Current Chapter\n\nNever loose sight of where you are - display the current chapter at the top of the screen.",
-      "MainBlock": "Get yer loot 'ere for a small ext- I mean, fee. But 't be only one! Never again, you'll not have ter pay again!\n\nYer know, CueLine is yer frends heart but, not thinking of the tongue, it be a one person boat. Yer payment of the fee funds the building of t'is ship, keeps ter app free of evil sea creatures, pays for the mighty Tim Apple harbor dues, *and* it makes yer one and only me get *a mighty load of imaging technology*. Thank yer for reading and thinkin' 'bout it!\n\n  ~ Lena"
+      "MainBlock": "Get yer loot 'ere for a small ext- I mean, fee. But 't be only one! Never again, you'll not have ter pay again!\n\nYer know, Mobile Prompter is yer frends heart but, not thinking of the tongue, it be a one person boat. Yer payment of the fee funds the building of t'is ship, keeps ter app free of evil sea creatures, pays for the mighty Tim Apple harbor dues, *and* it makes yer one and only me get *a mighty load of imaging technology*. Thank yer for reading and thinkin' 'bout it!\n\n  ~ Lena"
     }
   },
   "NoPurchaseAvailable": {

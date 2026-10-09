@@ -11,6 +11,9 @@ import 'package:cueline/providers/prompter_provider.dart';
 import 'package:cueline/providers/script_provider.dart';
 import 'package:cueline/providers/settings_provider.dart';
 import 'package:cueline/providers/speech_recognition_provider.dart';
+import 'package:cueline/services/creator_mode.dart';
+import 'package:cueline/services/creator_overlay.dart';
+import 'package:cueline/services/floating_prompter.dart';
 import 'package:cueline/services/speech_recognition_service.dart';
 import 'package:cueline/ui/screens/prompter_screen.dart';
 import 'package:cueline/ui/widgets/karaoke_text.dart';
@@ -19,6 +22,7 @@ import 'package:cueline/ui/widgets/prompter_bottom_bar.dart';
 import '../../integration_test/fake_providers/features_fake_pro.dart';
 import '../../integration_test/fake_providers/script_fake.dart';
 import '../../integration_test/fake_providers/settings_fake.dart';
+import '../helpers/fake_overlay.dart';
 import '../helpers/fake_speech_to_text.dart';
 
 /// Same gap [SpeechRecognitionService] waits before calling listen again.
@@ -59,6 +63,10 @@ void main() {
   late FakeSpeechToText speech;
   late SpeechRecognitionService service;
   late ProviderContainer container;
+  late FakeOverlay overlay;
+
+  /// Overlay permission of the next [pumpPrompter].
+  var overlayCanDraw = true;
 
   setUpAll(() async {
     SharedPreferences.setMockInitialValues({});
@@ -85,8 +93,25 @@ void main() {
 
     speech = FakeSpeechToText();
     service = SpeechRecognitionService(speech: speech);
+    overlay = FakeOverlay()..canDraw = overlayCanDraw;
+    overlayCanDraw = true;
+    addTearDown(overlay.close);
     container = ProviderContainer(
       overrides: [
+        creatorModeProvider.overrideWith((ref) {
+          final mode = CreatorMode(overlay);
+          ref.onDispose(mode.dispose);
+          return mode;
+        }),
+        floatingPrompterProvider.overrideWith((ref) {
+          final floating = FloatingPrompter(
+            ref.watch(creatorModeProvider),
+            overlay,
+            isSupported: true,
+          );
+          ref.onDispose(floating.dispose);
+          return floating;
+        }),
         speechRecognitionServiceProvider.overrideWithValue(service),
         scriptProvider.overrideWith(
           () => ScriptFake(name: 'Prova', content: _words.join(' ')),
@@ -291,6 +316,205 @@ void main() {
     await partial(tester, _say(0, 2));
     expect(karaoke(tester).activeWordIndex, 2);
     expect(tester.takeException(), isNull, reason: 'no overflow');
+  });
+
+  group('floating prompter', () {
+    final floatingButton = find.byTooltip('PrompterScreen.Floating.button');
+
+    FloatingPrompter floating() => container.read(floatingPrompterProvider);
+
+    Future<void> lastUpdateSent() =>
+        container.read(creatorModeProvider).pending;
+
+    void goToBackground(WidgetTester tester) {
+      for (final state in const [
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+      ]) {
+        tester.binding.handleAppLifecycleStateChanged(state);
+      }
+    }
+
+    void comeBack(WidgetTester tester) {
+      for (final state in const [
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ]) {
+        tester.binding.handleAppLifecycleStateChanged(state);
+      }
+    }
+
+    testWidgets('speech keeps moving the window while CueLine is away', (
+      tester,
+    ) async {
+      await pumpPrompter(tester);
+      await pressPlay(tester);
+      await partial(tester, _say(0, 2));
+
+      await tester.tap(floatingButton);
+      await settle(tester);
+      expect(floating().status, FloatingPrompterStatus.active);
+      expect(overlay.servicesStarted, 1);
+      expect(overlay.shows.single.words, _words, reason: 'one script');
+      expect(overlay.shows.single.index, 2, reason: 'same position');
+      expect(overlay.playing, isTrue);
+      expect(overlay.movedToBack, 1);
+
+      // CueLine → background → social app in front.
+      goToBackground(tester);
+      await settle(tester);
+      expect(overlay.visible, isTrue);
+      expect(service.isActive, isTrue, reason: 'not paused for the window');
+      expect(speech.isListening, isTrue);
+
+      await partial(tester, _say(3, 5));
+      await lastUpdateSent();
+      expect(karaoke(tester).activeWordIndex, 5);
+      expect(overlay.updates.last, 5);
+
+      final listens = speech.listenCount;
+      await finalResult(tester, _say(3, 6));
+      await lastUpdateSent();
+      expect(overlay.updates.last, 6);
+      expect(speech.listenCount, listens + 1, reason: 'next sentence heard');
+
+      // SEEK → OLD STT RESULT → IGNORE → NEW STT
+      karaoke(tester).seek(30);
+      await lastUpdateSent();
+      final sentAfterSeek = overlay.updates.length;
+      await partial(tester, _say(3, 9));
+      await finalResult(tester, _say(3, 10));
+      await partial(tester, _say(31, 32));
+      await lastUpdateSent();
+      expect(karaoke(tester).activeWordIndex, 32);
+      expect(
+        overlay.updates.skip(sentAfterSeek - 1),
+        everyElement(greaterThanOrEqualTo(30)),
+        reason: 'stale speech never pulled the window back',
+      );
+
+      // Pause and play from the window.
+      overlay.tap(FloatingOverlayAction.togglePlay);
+      await settle(tester);
+      expect(container.read(prompterProvider).isPlaying, isFalse);
+      expect(service.isActive, isFalse);
+      expect(overlay.playing, isFalse);
+
+      overlay.tap(FloatingOverlayAction.togglePlay);
+      await settle(tester);
+      expect(container.read(prompterProvider).isPlaying, isTrue);
+      expect(service.isActive, isTrue);
+      expect(overlay.playing, isTrue);
+      await partial(tester, _say(33, 34));
+      await lastUpdateSent();
+      expect(overlay.updates.last, 34);
+
+      // Back in CueLine the window steps aside but stays armed.
+      comeBack(tester);
+      await settle(tester);
+      expect(overlay.visible, isFalse);
+      expect(floating().isActive, isTrue);
+      goToBackground(tester);
+      await settle(tester);
+      expect(overlay.visible, isTrue);
+
+      // Close on the window.
+      overlay.tap(FloatingOverlayAction.close);
+      await settle(tester);
+      expect(floating().status, FloatingPrompterStatus.off);
+      expect(overlay.running, isFalse);
+      expect(overlay.servicesStarted, 1, reason: 'never a second service');
+
+      // Without the window, background pauses speech as before.
+      expect(service.isActive, isTrue);
+      comeBack(tester);
+      goToBackground(tester);
+      await settle(tester);
+      expect(speech.isListening, isFalse);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('leaving the prompter removes the window', (tester) async {
+      await pumpPrompter(tester);
+      await pressPlay(tester);
+      await tester.tap(floatingButton);
+      await settle(tester);
+      expect(overlay.running, isTrue);
+
+      Navigator.of(tester.element(find.byType(PrompterScreen)))
+          .pushReplacement(MaterialPageRoute(builder: (_) => const SizedBox()));
+      await settle(tester);
+
+      expect(overlay.running, isFalse);
+      expect(floating().status, FloatingPrompterStatus.off);
+      expect(service.isActive, isFalse);
+      expect(tester.takeException(), isNull);
+
+      // A late button event after dispose does nothing.
+      overlay.tap(FloatingOverlayAction.togglePlay);
+      await settle(tester);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('permission: explain, not now, then allow in settings', (
+      tester,
+    ) async {
+      overlayCanDraw = false;
+      await pumpPrompter(tester);
+      await pressPlay(tester);
+
+      await tester.tap(floatingButton);
+      await settle(tester);
+      expect(
+        find.text('PrompterScreen.Floating.permissionTitle'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('PrompterScreen.Floating.notNow'));
+      await settle(tester);
+      expect(floating().status, FloatingPrompterStatus.off);
+      expect(overlay.settingsOpened, 0);
+      expect(overlay.servicesStarted, 0);
+      expect(service.isActive, isTrue, reason: 'the prompter carries on');
+
+      overlay.grantOnSettings = true;
+      await tester.tap(floatingButton);
+      await settle(tester);
+      await tester.tap(find.text('PrompterScreen.Floating.openSettings'));
+      await settle(tester);
+      expect(overlay.settingsOpened, 1);
+      expect(floating().status, FloatingPrompterStatus.awaitingPermission);
+
+      // Settings covered CueLine; coming back finishes the start.
+      goToBackground(tester);
+      comeBack(tester);
+      await settle(tester);
+      expect(floating().status, FloatingPrompterStatus.active);
+      expect(overlay.servicesStarted, 1);
+    });
+
+    testWidgets('without the microphone it explains and keeps the prompter', (
+      tester,
+    ) async {
+      await pumpPrompter(tester);
+      overlay.showError = 'microphone_permission_denied';
+      await tester.tap(floatingButton);
+      await settle(tester);
+
+      expect(floating().status, FloatingPrompterStatus.failed);
+      expect(
+        find.text('PrompterScreen.Floating.microphoneRequired'),
+        findsOneWidget,
+      );
+      expect(overlay.running, isFalse);
+      // The message covers the play button until it times out.
+      await tester.pump(const Duration(seconds: 5));
+      await settle(tester);
+      await pressPlay(tester);
+      await partial(tester, _say(0, 1));
+      expect(karaoke(tester).activeWordIndex, 1);
+    });
   });
 }
 

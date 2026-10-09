@@ -41,8 +41,10 @@ class PrompterBottomBar extends ConsumerWidget {
   IconData _playIcon(WidgetRef ref) {
     final playing = ref.watch(prompterProvider.select((p) => p.isPlaying));
     if (!playing) return Icons.play_arrow_rounded;
+    // isActive, not isListening: the recognizer restarts after every
+    // sentence and the icon must not blink through those short gaps.
     final listening = ref.watch(
-      speechRecognitionProvider.select((s) => s.isListening),
+      speechRecognitionProvider.select((s) => s.isActive),
     );
     return listening ? Icons.stop_rounded : Icons.mic_none;
   }
@@ -54,12 +56,7 @@ class PrompterBottomBar extends ConsumerWidget {
 
     return Stack(
       children: [
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: _chrome(context, ref),
-        ),
+        Positioned(bottom: 0, left: 0, right: 0, child: _chrome(context, ref)),
         if (fontSettingsVisible) SafeArea(child: _FontSettingsDialog()),
         if (displaySettingsVisible) SafeArea(child: _DisplaySettingsDialog()),
       ],
@@ -87,9 +84,7 @@ class PrompterBottomBar extends ConsumerWidget {
             children: [
               _FeatureGatedIconButton(
                 feature: Feature.textSettings,
-                displayText: context.tr(
-                  "PrompterScreen.IconButton_TextFormat",
-                ),
+                displayText: context.tr("PrompterScreen.IconButton_TextFormat"),
                 icon: Icon(Icons.text_fields, color: onSurface),
                 tooltip: context.tr("PrompterScreen.IconButton_TextFormat"),
                 onPressed: () =>
@@ -143,9 +138,8 @@ class PrompterBottomBar extends ConsumerWidget {
                 tooltip: context.tr(
                   "PrompterScreen.IconButton_DisplaySettings",
                 ),
-                onPressed: () => ref
-                    .read(displaySettingsVisibleProvider.notifier)
-                    .toggle(),
+                onPressed: () =>
+                    ref.read(displaySettingsVisibleProvider.notifier).toggle(),
               ),
               IconButton(
                 icon: Icon(Icons.more_horiz, color: onSurface),
@@ -207,9 +201,7 @@ class PrompterBottomBar extends ConsumerWidget {
                     ),
                     ListTile(
                       leading: const Icon(Icons.save_outlined),
-                      title: Text(
-                        context.tr("PrompterScreen.IconButton_Save"),
-                      ),
+                      title: Text(context.tr("PrompterScreen.IconButton_Save")),
                       onTap: () {
                         ref
                             .read(settingsProvider.notifier)
@@ -499,9 +491,9 @@ class _DisplaySettingsDialog extends ConsumerWidget {
                                 fontWeight: FontWeight.bold,
                                 color: prompterConfig.markdownEnabled
                                     ? (prompterConfig.showCurrentChapter
-                                          ? Theme.of(
-                                              context,
-                                            ).colorScheme.primary
+                                          ? Theme.of(context)
+                                                .colorScheme
+                                                .primary
                                           : IconTheme.of(context).color)
                                     : Theme.of(context).disabledColor,
                               ),

@@ -59,12 +59,23 @@ CueLine design system: tek amber vurgu (`#E8B44C`), nötr koyu zemin, Roboto UI 
 - Prompter: content-first koyu chrome, play CTA, Aa / tune / more progressive disclosure. Portrait + landscape. Karaoke vurgu: okunmuş %42 opaklık, aktif = accent, ağırlık değişmez.
 - Settings: Appearance / Prompter / About grupları.
 - About / Privacy: CueLine kimliği; MIT / TiefPrompt attribution korunur.
-- Debug şeridi / speech debug / creator overlay / log: yalnızca `--dart-define=KARAOKE_DEBUG=true`.
-- Creator overlay izinleri ve servis yalnızca debug AndroidManifest’te.
+- Debug şeridi / speech debug / log: yalnızca `--dart-define=KARAOKE_DEBUG=true`.
+
+### Yüzen prompter (Android)
+
+Prompter üst çubuğundaki düğme açar. Yalnızca Android 8+; iOS’ta düğme görünmez.
+
+- Tek pipeline: STT → follower → matcher → `KaraokeController` → (prompter UI + `CreatorMode` → native pencere). Pencere yalnızca kelimeleri bir kez, sonra aktif index’i alır; art arda değişiklikler tek güncellemeye iner.
+- Durumlar (`FloatingPrompter`): off → permissionRequired (açıklama, “Şimdi değil”) → awaitingPermission (sistem ayarı) → starting → active; hata → failed. Duraklatma ayrı durum değil, prompter’ın play durumunu izler.
+- Native: `CreatorOverlayService`, `microphone` tipinde foreground service + `TYPE_APPLICATION_OVERLAY` pencere (oynat/duraklat, kapat, sürükle). Mikrofon FGS’i Android 14+’da arka plandan oluşturulamaz; düğmeye basıldığında, CueLine ekrandayken başlatılır. Başladıktan sonra CueLine `moveTaskToBack` ile arka plana geçer.
+- CueLine ön plandayken pencere gizlenir, arka plana geçince görünür. Pencere açıkken `PrompterScreen` arka planda konuşmayı duraklatmaz.
+- Kapat: pencere ve servis durur, CueLine öne gelir. Prompter’dan çıkmak, uygulamayı son uygulamalardan kaldırmak (`stopWithTask`) veya activity’nin bitmesi de servisi durdurur.
+- Emülatörde doğrulandı (Pixel 8, Android 16): izin akışı (reddet / ver), pencerenin ana ekran ve YouTube üzerinde görünmesi, arka planda STT partial’larının follower/matcher’a ulaşması, overlay’den duraklatma, kapatınca CueLine’a dönüş, süreç ölünce servisin kalmaması. Ortamdaki başka bir konuşma tanındığı için arka planda kelime ilerlemesi emülatörde gözlenemedi; gerçek cihaz QA’sı gerekli.
+- iOS: başka uygulamaların üzerinde serbest pencere yok. PiP (`AVSampleBufferDisplayLayer`) ile metin göstermek teknik olarak mümkün ama video dışı içerik App Review riski taşır ve arka planda sürekli konuşma tanıma ayrıca doğrulanmalı; bu sürümde yok.
 
 ### Platform
 
-- Android: `RECORD_AUDIO`, `INTERNET`, `RecognitionService` queries. Overlay/FGS release’de yok.
+- Android: `RECORD_AUDIO`, `INTERNET`, `RecognitionService` queries; yüzen prompter için `SYSTEM_ALERT_WINDOW`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MICROPHONE`. Play beyanı: `docs/release.md`.
 - iOS: `NSMicrophoneUsageDescription`, `NSSpeechRecognitionUsageDescription`. Deployment 15.6.
 - Store imzalama bu repoda yok; `android/key.properties.example` şablondur.
 

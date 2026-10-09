@@ -48,9 +48,8 @@ class ThemedApp extends ConsumerWidget {
         supportedLocales: supportedLocales,
         locale: locale,
         home: ResetSettingsScreen(
-          title: "Couldn't load CueLine",
-          message:
-              "Settings could not be loaded. Resetting them should restore the app.",
+          title: "Couldn't load $kAppName",
+          message: "Settings could not be loaded. Resetting them should restore the app.",
           error: error,
         ),
       );

@@ -150,15 +150,15 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
       controller: karaoke,
       events: ref.read(speechRecognitionServiceProvider).events,
     );
-    if (kKaraokeDebugTools) {
-      final creatorMode = ref.read(creatorModeProvider);
-      _creatorMode = creatorMode;
-      creatorMode.attach(
-        listenable: karaoke,
-        words: () => karaoke.document.words,
-        index: () => karaoke.activeWordIndex,
-      );
-    }
+    // The floating prompter mirrors this controller. While the window is
+    // hidden, sync() returns at once.
+    final creatorMode = ref.read(creatorModeProvider);
+    _creatorMode = creatorMode;
+    creatorMode.attach(
+      listenable: karaoke,
+      words: () => karaoke.document.words,
+      index: () => karaoke.activeWordIndex,
+    );
 
     _markdownController.addListener(_recomputeChapterOffsets);
     widget.controller.scrollController.addListener(_updateCurrentChapter);
@@ -201,12 +201,10 @@ class _ScrollableTextState extends ConsumerState<ScrollableText>
     super.didUpdateWidget(oldWidget);
     if (widget.text != oldWidget.text) {
       _rebuildAst();
-      if (kKaraokeDebugTools) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          ref.read(creatorModeProvider).sync();
-        });
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(creatorModeProvider).sync();
+      });
     }
   }
 

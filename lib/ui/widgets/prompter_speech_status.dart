@@ -27,6 +27,7 @@ class PrompterSpeechStatus extends ConsumerWidget {
           recoverable: s.errorRecoverable,
           permissionGranted: s.permissionGranted,
           recognizerMissing: s.recognizerMissing,
+          sessionCount: s.sessionCount,
         ),
       ),
     );
@@ -78,7 +79,8 @@ class PrompterSpeechStatus extends ConsumerWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (tone == _StatusTone.ok && snapshot.isListening)
+                if (tone == _StatusTone.ok &&
+                    (snapshot.isListening || snapshot.sessionCount > 0))
                   const _ListeningDot()
                 else
                   Icon(icon, size: CueLineTokens.iconSm, color: foreground),
@@ -115,6 +117,7 @@ class PrompterSpeechStatus extends ConsumerWidget {
       bool recoverable,
       bool? permissionGranted,
       bool recognizerMissing,
+      int sessionCount,
     })
     snapshot,
   }) {
@@ -158,14 +161,18 @@ class PrompterSpeechStatus extends ConsumerWidget {
         tone: _StatusTone.warn,
       );
     }
-    if (snapshot.error != null && snapshot.recoverable) {
+    // Silence timeouts and the restart after each sentence are routine in
+    // continuous mode. Once a session has run, keep showing "listening"
+    // instead of flickering through retrying/starting.
+    final hasListened = snapshot.sessionCount > 0;
+    if (snapshot.error != null && snapshot.recoverable && !hasListened) {
       return (
         label: context.tr('PrompterScreen.Speech.retrying'),
         icon: Icons.sync,
         tone: _StatusTone.warn,
       );
     }
-    if (snapshot.isListening) {
+    if (snapshot.isListening || (snapshot.isActive && hasListened)) {
       return (
         label: context.tr('PrompterScreen.Speech.listening'),
         icon: Icons.mic,

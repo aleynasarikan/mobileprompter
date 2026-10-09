@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
@@ -10,6 +11,7 @@ import 'package:talker/talker.dart';
 import 'package:cueline/core/debug_flags.dart';
 import 'package:cueline/providers/talker_provider.dart';
 import 'package:cueline/services/karaoke_timing_log.dart';
+import 'package:cueline/services/native_continuous_speech.dart';
 
 part 'speech_recognition_service.g.dart';
 
@@ -129,6 +131,10 @@ class SpeechRecognitionService {
   static const listenFailedCode = 'listen_failed';
 
   static const _restartDelay = Duration(milliseconds: 300);
+
+  /// Gap after a final. Words spoken while no session runs are lost and the
+  /// karaoke position stalls until the next partial, so this stays short.
+  static const _finalRestartDelay = Duration(milliseconds: 60);
   static const _maxRestartDelay = Duration(milliseconds: 2400);
   static const _maxFailedRestarts = 5;
 
@@ -162,8 +168,15 @@ class SpeechRecognitionService {
   /// same session does not schedule another one.
   int? _restartArmedFor;
 
+  /// The current session ended with a final, not silence or an error.
+  bool _endedWithFinal = false;
+
   SpeechRecognitionService({SpeechToText? speech, this._talker})
     : _speech = speech ?? SpeechToText();
+
+  /// The engine keeps one session across sentences and restarts natively;
+  /// a final must not end it.
+  bool get _sessionSpansFinals => _speech is NativeContinuousSpeech;
 
   Stream<SpeechRecognitionEvent> get events => _events.stream;
 
@@ -378,6 +391,7 @@ class SpeechRecognitionService {
     final session = ++_generation;
     KaraokeTimingLog.listenStarted(session);
     _restartArmedFor = null;
+    _endedWithFinal = false;
     _speech.statusListener = (status) => _onStatus(status, session);
     _speech.errorListener = (error) => _onError(error, session);
     _diagnose(
@@ -472,6 +486,7 @@ class SpeechRecognitionService {
   /// Silence timeouts are retried, but the gap grows so an empty-session
   /// loop does not hammer the recognizer or the battery.
   Duration _delayForRestart() {
+    if (_endedWithFinal) return _finalRestartDelay;
     if (_consecutiveSilence <= 1) return _restartDelay;
     final shift = (_consecutiveSilence - 1).clamp(1, 3);
     final ms = _restartDelay.inMilliseconds * (1 << shift);
@@ -572,7 +587,10 @@ class SpeechRecognitionService {
         confidence: result.confidence,
       ),
     );
-    if (result.finalResult) unawaited(_restartAfterFinal(session));
+    if (result.finalResult && !_sessionSpansFinals) {
+      _endedWithFinal = true;
+      unawaited(_restartAfterFinal(session));
+    }
   }
 
   void _emitFailure(
@@ -608,7 +626,12 @@ extension<T> on List<T> {
 
 @Riverpod(keepAlive: true)
 SpeechRecognitionService speechRecognitionService(Ref ref) {
-  final service = SpeechRecognitionService(talker: ref.read(talkerProvider));
+  final service = SpeechRecognitionService(
+    talker: ref.read(talkerProvider),
+    speech: !kIsWeb && defaultTargetPlatform == TargetPlatform.android
+        ? NativeContinuousSpeech()
+        : null,
+  );
   ref.onDispose(service.dispose);
   return service;
 }

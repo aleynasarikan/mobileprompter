@@ -8,9 +8,20 @@ Text you type, paste, or open is stored on the device (SQLite). CueLine does not
 
 ## Microphone
 
-The microphone is used only while playback is running, so the teleprompter can follow the words you speak. Listening stops when you pause or stop playback, leave the teleprompter screen, or send the app to the background.
+The microphone is used only while playback is running, so the teleprompter can follow the words you speak. Listening stops when you pause or stop playback, leave the teleprompter screen, or send the app to the background, unless the floating prompter is on (see below).
 
 CueLine does not keep audio recordings.
+
+## Floating prompter (Android)
+
+The floating prompter is optional and starts only when you turn it on in the prompter. While it is on:
+
+- A small CueLine window stays on screen over other apps (Android "display over other apps" permission, which you grant in system settings).
+- Speech following keeps running while another app, such as TikTok, Instagram, YouTube or the camera, is in front. Android shows its microphone indicator and a CueLine notification for as long as this runs.
+- The window shows only your own script. CueLine does not read, capture or record the screen or content of other apps, and does not access their camera.
+- No audio or video is saved, and nothing new is sent anywhere. Speech goes to the same system recognizer as in the normal prompter.
+
+Closing the window, pausing in it, leaving the prompter or removing CueLine from recent apps stops it.
 
 ## Speech recognition
 
@@ -27,7 +38,7 @@ Internet permission is declared because the system speech recognizer may need a 
 
 ## Permissions
 
-- Android: `RECORD_AUDIO`, `INTERNET`
+- Android: `RECORD_AUDIO`, `INTERNET`; for the floating prompter `SYSTEM_ALERT_WINDOW` (display over other apps), `FOREGROUND_SERVICE` and `FOREGROUND_SERVICE_MICROPHONE`
 - iOS: microphone usage description and speech recognition usage description in `Info.plist`
 
 ## What this document is not

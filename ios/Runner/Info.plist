@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>CueLine</string>
+	<string>Mobile Prompter</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>CueLine</string>
+	<string>Mobile Prompter</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -27,9 +27,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>CueLine uses the microphone to follow the words you speak and scroll the teleprompter.</string>
+	<string>Mobile Prompter uses the microphone to follow the words you speak and scroll the teleprompter.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>CueLine uses speech recognition to match your voice to the script and highlight the current word.</string>
+	<string>Mobile Prompter uses speech recognition to match your voice to the script and highlight the current word.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

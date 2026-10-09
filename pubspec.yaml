@@ -95,8 +95,8 @@ flutter_launcher_icons:
     generate: true
 
 msix_config:
-  display_name: CueLine
-  publisher_display_name: CueLine
+  display_name: Mobile Prompter
+  publisher_display_name: Mobile Prompter
   identity_name: app.cueline.teleprompter
   msix_version: 1.0.0.0
   logo_path: assets/images/icon_bg_round.png

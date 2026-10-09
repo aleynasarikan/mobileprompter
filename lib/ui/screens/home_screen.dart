@@ -8,11 +8,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:cueline/core/constants.dart';
 import 'package:cueline/core/debouncer.dart';
 import 'package:cueline/models/app_state.drift.dart';
 import 'package:cueline/providers/database_provider.dart';
 import 'package:cueline/providers/prompter_provider.dart';
 import 'package:cueline/providers/script_provider.dart';
+import 'package:cueline/services/floating_prompter.dart';
 import 'package:cueline/services/script_service.dart';
 import 'package:cueline/ui/widgets/changelog_modal.dart';
 
@@ -38,7 +40,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final script = ref.read(scriptProvider);
     _scriptTextController.text = script.text;
-    _scriptTitleController.text = script.title ?? "";
+    _scriptTitleController.text = _displayTitle(script.title);
 
     LicenseRegistry.addLicense(() async* {
       final openDyslexicLicense = await rootBundle.loadString(
@@ -122,10 +124,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           text: next.text,
           selection: selection,
         );
-        _scriptTitleController.value = TextEditingValue(text: next.title ?? "");
+        _scriptTitleController.value = TextEditingValue(
+          text: _displayTitle(next.title),
+        );
       }
     });
   }
+
+  /// The stored default name is English; show the localized hint instead.
+  static String _displayTitle(String? title) =>
+      title == null || title == kNewScriptName ? "" : title;
 
   @override
   void dispose() {
@@ -141,7 +149,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final theme = Theme.of(context);
     final tokens = CueLineTheme.of(context);
     final isSaved = ref.watch(scriptProvider.select((s) => s.isSaved));
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final scriptText = ref.watch(scriptProvider.select((s) => s.text));
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final floatingSupported = ref.watch(floatingPrompterProvider).isSupported;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -154,187 +164,138 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 CueLineTokens.spaceLg,
                 CueLineTokens.spaceSm,
                 CueLineTokens.spaceSm,
-                CueLineTokens.spaceSm,
+                0,
               ),
               child: Row(
                 children: [
                   const Expanded(child: CueLineMark()),
                   IconButton(
-                    key: const Key("HomeScreen.IconButton_Settings"),
-                    icon: const Icon(Icons.settings_outlined),
-                    onPressed: () => context.push("/settings"),
-                    tooltip: context.tr("HomeScreen.IconButton_Settings"),
+                    key: const Key("HomeScreen.ElevatedButton_Select"),
+                    icon: const Icon(Icons.folder_open_outlined),
+                    tooltip: context.tr("HomeScreen.ElevatedButton_Select"),
+                    onPressed: _openScript,
                   ),
                   IconButton(
-                    key: const Key("HomeScreen.IconButton_About"),
-                    icon: const Icon(Icons.info_outline),
-                    tooltip: context.tr("HomeScreen.IconButton_About"),
-                    onPressed: () => context.push('/about'),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                CueLineTokens.spaceLg,
-                0,
-                CueLineTokens.spaceLg,
-                CueLineTokens.spaceMd,
-              ),
-              child: Text(
-                context.tr("HomeScreen.Intro"),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: tokens.mutedText,
-                  height: 1.4,
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: CueLineTokens.spaceLg,
-              ),
-              child: TextField(
-                key: const Key("HomeScreen.TitleField"),
-                keyboardType: TextInputType.text,
-                textInputAction: TextInputAction.next,
-                style: theme.textTheme.titleLarge,
-                decoration: InputDecoration(
-                  hintText: context.tr("HomeScreen.TitleField_hintText"),
-                  filled: false,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    vertical: CueLineTokens.spaceSm,
-                  ),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                ),
-                controller: _scriptTitleController,
-                onChanged: (value) {
-                  ref.read(scriptProvider.notifier).setTitle(value);
-                  ref.read(scriptProvider.notifier).setIsSaved(false);
-                  if (ref.read(scriptProvider).ephemeral) {
-                    _scriptChangeDebouncer.run(_updateEphemeralScript);
-                  }
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: CueLineTokens.spaceLg,
-              ),
-              child: Divider(color: tokens.hairline, height: 1),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  CueLineTokens.spaceLg,
-                  CueLineTokens.spaceSm,
-                  CueLineTokens.spaceLg,
-                  CueLineTokens.spaceSm,
-                ),
-                child: TextField(
-                  key: const Key("HomeScreen.TextField"),
-                  keyboardType: TextInputType.multiline,
-                  textAlignVertical: TextAlignVertical.top,
-                  expands: true,
-                  maxLines: null,
-                  style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
-                  decoration: InputDecoration(
-                    hintText: context.tr("HomeScreen.TextField_hintText"),
-                    filled: false,
-                    alignLabelWithHint: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: CueLineTokens.spaceSm,
+                    key: const Key("HomeScreen.ElevatedButton_Save"),
+                    icon: Icon(
+                      isSaved
+                          ? Icons.bookmark_added
+                          : Icons.bookmark_add_outlined,
                     ),
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
+                    tooltip: context.tr("HomeScreen.ElevatedButton_Save"),
+                    onPressed: _saveScript,
                   ),
-                  controller: _scriptTextController,
-                  onChanged: (value) {
-                    ref.read(scriptProvider.notifier).setText(value);
-                    ref.read(scriptProvider.notifier).setIsSaved(false);
-                    if (ref.read(scriptProvider).ephemeral) {
-                      _scriptChangeDebouncer.run(_updateEphemeralScript);
-                    }
-                  },
-                ),
-              ),
-            ),
-            if (!isSaved)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  CueLineTokens.spaceLg,
-                  0,
-                  CueLineTokens.spaceLg,
-                  CueLineTokens.spaceXs,
-                ),
-                child: Text(
-                  context.tr("HomeScreen.UnsavedHint"),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: tokens.mutedText,
-                  ),
-                ),
-              ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                CueLineTokens.spaceLg,
-                CueLineTokens.spaceSm,
-                CueLineTokens.spaceLg,
-                CueLineTokens.spaceMd + (bottomInset > 0 ? 0 : 4),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  FilledButton.icon(
-                    key: const Key("HomeScreen.ElevatedButton_Start"),
-                    onPressed: _startPrompter,
-                    icon: const Icon(Icons.graphic_eq),
-                    label: Text(
-                      context.tr("HomeScreen.ElevatedButton_Start"),
-                    ),
-                  ),
-                  const SizedBox(height: CueLineTokens.spaceSm),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          key: const Key("HomeScreen.ElevatedButton_Select"),
-                          onPressed: () {
-                            if (ref.read(scriptProvider).isSaved) {
-                              context.push('/open_file');
-                            } else {
-                              _showDiscardConfirmDialog(
-                                () => context.push('/open_file'),
-                              );
-                            }
-                          },
-                          child: Text(
-                            context.tr("HomeScreen.ElevatedButton_Select"),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert),
+                    onSelected: (route) => context.push(route),
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        key: const Key("HomeScreen.IconButton_Settings"),
+                        value: "/settings",
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.settings_outlined),
+                          title: Text(
+                            context.tr("HomeScreen.IconButton_Settings"),
                           ),
                         ),
                       ),
-                      Expanded(
-                        child: TextButton(
-                          key: const Key("HomeScreen.ElevatedButton_Save"),
-                          onPressed: () async {
-                            if (ref.read(scriptProvider).ephemeral) {
-                              _saveCurrentScript();
-                              ref
-                                  .read(scriptServiceProvider.notifier)
-                                  .createEphemeral();
-                            } else {
-                              await _showNewOrOverrideDialog();
-                            }
-                          },
-                          child: Text(
-                            context.tr('HomeScreen.ElevatedButton_Save'),
+                      PopupMenuItem(
+                        key: const Key("HomeScreen.IconButton_About"),
+                        value: "/about",
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.info_outline),
+                          title: Text(
+                            context.tr("HomeScreen.IconButton_About"),
                           ),
                         ),
                       ),
                     ],
                   ),
+                ],
+              ),
+            ),
+            if (!keyboardOpen)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  CueLineTokens.spaceLg,
+                  CueLineTokens.spaceXs,
+                  CueLineTokens.spaceLg,
+                  CueLineTokens.spaceMd,
+                ),
+                child: Text(
+                  context.tr("HomeScreen.Intro"),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: tokens.mutedText,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: CueLineTokens.spaceMd,
+                ),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: tokens.editorFill,
+                    borderRadius: BorderRadius.circular(CueLineTokens.radiusLg),
+                    border: Border.all(color: tokens.hairline),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      CueLineTokens.spaceMd,
+                      CueLineTokens.spaceXs,
+                      CueLineTokens.spaceMd,
+                      CueLineTokens.spaceSm,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _titleField(theme),
+                        Divider(color: tokens.hairline, height: 1),
+                        Expanded(child: _scriptField(theme)),
+                        _ScriptStats(text: scriptText, isSaved: isSaved),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                CueLineTokens.spaceMd,
+                CueLineTokens.spaceMd,
+                CueLineTokens.spaceMd,
+                CueLineTokens.spaceMd,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _ModeCard(
+                    key: const Key("HomeScreen.ElevatedButton_Start"),
+                    primary: true,
+                    icon: Icons.graphic_eq,
+                    title: context.tr("HomeScreen.Mode.Live.Title"),
+                    subtitle: keyboardOpen
+                        ? null
+                        : context.tr("HomeScreen.Mode.Live.Subtitle"),
+                    onTap: () => _startPrompter(),
+                  ),
+                  if (floatingSupported) ...[
+                    const SizedBox(height: CueLineTokens.spaceSm),
+                    _ModeCard(
+                      key: const Key("HomeScreen.ElevatedButton_StartFloating"),
+                      primary: false,
+                      icon: Icons.picture_in_picture_alt_outlined,
+                      title: context.tr("HomeScreen.Mode.Apps.Title"),
+                      subtitle: keyboardOpen
+                          ? null
+                          : context.tr("HomeScreen.Mode.Apps.Subtitle"),
+                      onTap: () => _startPrompter(floating: true),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -344,15 +305,91 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  void _startPrompter() {
+  Widget _titleField(ThemeData theme) {
+    return TextField(
+      key: const Key("HomeScreen.TitleField"),
+      keyboardType: TextInputType.text,
+      textInputAction: TextInputAction.next,
+      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+      decoration: InputDecoration(
+        hintText: context.tr("HomeScreen.TitleField_hintText"),
+        filled: false,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: CueLineTokens.spaceMd,
+        ),
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+      ),
+      controller: _scriptTitleController,
+      onChanged: (value) {
+        ref.read(scriptProvider.notifier).setTitle(value);
+        ref.read(scriptProvider.notifier).setIsSaved(false);
+        if (ref.read(scriptProvider).ephemeral) {
+          _scriptChangeDebouncer.run(_updateEphemeralScript);
+        }
+      },
+    );
+  }
+
+  Widget _scriptField(ThemeData theme) {
+    return TextField(
+      key: const Key("HomeScreen.TextField"),
+      keyboardType: TextInputType.multiline,
+      textAlignVertical: TextAlignVertical.top,
+      expands: true,
+      maxLines: null,
+      style: theme.textTheme.bodyLarge?.copyWith(height: 1.55),
+      decoration: InputDecoration(
+        hintText: context.tr("HomeScreen.TextField_hintText"),
+        filled: false,
+        alignLabelWithHint: true,
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: CueLineTokens.spaceMd,
+        ),
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+      ),
+      controller: _scriptTextController,
+      onChanged: (value) {
+        ref.read(scriptProvider.notifier).setText(value);
+        ref.read(scriptProvider.notifier).setIsSaved(false);
+        if (ref.read(scriptProvider).ephemeral) {
+          _scriptChangeDebouncer.run(_updateEphemeralScript);
+        }
+      },
+    );
+  }
+
+  void _openScript() {
+    if (ref.read(scriptProvider).isSaved) {
+      context.push('/open_file');
+    } else {
+      _showDiscardConfirmDialog(() => context.push('/open_file'));
+    }
+  }
+
+  Future<void> _saveScript() async {
+    if (ref.read(scriptProvider).ephemeral) {
+      await _saveCurrentScript();
+      ref.read(scriptServiceProvider.notifier).createEphemeral();
+    } else {
+      await _showNewOrOverrideDialog();
+    }
+  }
+
+  void _startPrompter({bool floating = false}) {
     if (ref.read(scriptProvider).text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.tr("HomeScreen.EmptyScript"))),
       );
       return;
     }
+    FocusScope.of(context).unfocus();
     ref.invalidate(prompterProvider);
-    context.push('/teleprompter');
+    context.push(floating ? '/teleprompter?mode=floating' : '/teleprompter');
   }
 
   void _updateEphemeralScript() {
@@ -439,5 +476,155 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     scriptProviderNotifier.setId(savedScriptId);
 
     return savedScriptId;
+  }
+}
+
+/// Word count and an estimated speaking time for the script.
+class _ScriptStats extends StatelessWidget {
+  /// Typical teleprompter pace for Turkish and English speech.
+  static const _wordsPerMinute = 130;
+
+  final String text;
+  final bool isSaved;
+
+  const _ScriptStats({required this.text, required this.isSaved});
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = CueLineTheme.of(context);
+    final style = Theme.of(context).textTheme.labelMedium
+        ?.copyWith(color: tokens.mutedText);
+    final words = text.trim().isEmpty
+        ? 0
+        : text.trim().split(RegExp(r'\s+')).length;
+    final seconds = (words * 60 / _wordsPerMinute).round();
+    final duration = seconds >= 60
+        ? context.tr(
+            "HomeScreen.DurationMinutes",
+            namedArgs: {'m': '${seconds ~/ 60}', 's': '${seconds % 60}'},
+          )
+        : context.tr(
+            "HomeScreen.DurationSeconds",
+            namedArgs: {'s': '$seconds'},
+          );
+
+    return Padding(
+      padding: const EdgeInsets.only(top: CueLineTokens.spaceSm),
+      child: Row(
+        children: [
+          Icon(Icons.schedule, size: 14, color: tokens.mutedText),
+          const SizedBox(width: CueLineTokens.spaceXs),
+          Expanded(
+            child: Text(
+              context.tr(
+                "HomeScreen.Stats",
+                namedArgs: {'words': '$words', 'duration': duration},
+              ),
+              style: style,
+            ),
+          ),
+          if (!isSaved)
+            Text(context.tr("HomeScreen.UnsavedHint"), style: style),
+        ],
+      ),
+    );
+  }
+}
+
+/// Large entry point for one way of speaking.
+class _ModeCard extends StatelessWidget {
+  final bool primary;
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final VoidCallback onTap;
+
+  const _ModeCard({
+    super.key,
+    required this.primary,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final tokens = CueLineTheme.of(context);
+    final background = primary ? colors.primary : tokens.editorFill;
+    final foreground = primary ? colors.onPrimary : colors.onSurface;
+    final muted = primary
+        ? colors.onPrimary.withValues(alpha: 0.72)
+        : tokens.mutedText;
+    final radius = BorderRadius.circular(CueLineTokens.radiusLg);
+
+    return Material(
+      color: background,
+      borderRadius: radius,
+      child: InkWell(
+        borderRadius: radius,
+        onTap: onTap,
+        child: Container(
+          decoration: primary
+              ? null
+              : BoxDecoration(
+                  borderRadius: radius,
+                  border: Border.all(color: tokens.hairline),
+                ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: CueLineTokens.spaceMd,
+            vertical: CueLineTokens.spaceMd,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: primary
+                      ? colors.onPrimary.withValues(alpha: 0.14)
+                      : colors.primary.withValues(alpha: 0.14),
+                ),
+                child: Icon(
+                  icon,
+                  color: primary ? foreground : colors.primary,
+                  size: CueLineTokens.iconMd,
+                ),
+              ),
+              const SizedBox(width: CueLineTokens.spaceMd),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: foreground,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: muted,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_rounded, color: foreground),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

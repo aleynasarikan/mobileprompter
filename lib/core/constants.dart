@@ -14,7 +14,7 @@ const double kPrompterMaxFontSize = 420.0;
 const double kPrompterMinSideMargin = 0.0;
 const double kPrompterMaxSideMargin = 99.0;
 
-const String kAppName = 'CueLine';
+const String kAppName = 'Mobile Prompter';
 
 const String kNewScriptName = "New Script";
 
@@ -157,11 +157,10 @@ final List<TiefPromptFontsFile> kAvailableFonts = [
 ];
 
 const kSupportedLocales = [
-  ("English", Locale("en", "US")),
   ("Türkçe", Locale("tr", "TR")),
-  ("简体中文", Locale("zh", "CN")),
+  ("English", Locale("en", "US")),
   ("Deutsch", Locale("de", "DE")),
-  ("Pirate English", ExtendedLocale("en", "pirate")),
+  ("简体中文", Locale("zh", "CN")),
   ("Русский", Locale("ru")),
   ("العربية", Locale("ar")),
 ];

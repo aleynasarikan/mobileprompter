@@ -40,6 +40,8 @@ void main() async {
       child: el.EasyLocalization(
         supportedLocales: kSupportedLocales.map((l10n) => l10n.$2).toList(),
         path: 'assets/translations',
+        // Turkish first; a language picked in settings is saved and wins.
+        startLocale: Locale('tr', 'TR'),
         fallbackLocale: Locale('en', 'US'),
         useFallbackTranslations: true,
         child: TeleprompterApp(),

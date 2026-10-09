@@ -15,9 +15,12 @@ import 'package:cueline/providers/prompter_config.dart';
 import 'package:cueline/providers/prompter_provider.dart';
 import 'package:cueline/providers/settings_provider.dart';
 import 'package:cueline/providers/speech_recognition_provider.dart';
+import 'package:cueline/services/creator_overlay.dart';
+import 'package:cueline/services/floating_prompter.dart';
 import 'package:cueline/services/script_service.dart';
 import 'package:cueline/services/speech_recognition_service.dart';
 import 'package:cueline/ui/widgets/countdown_timer.dart';
+import 'package:cueline/ui/widgets/floating_prompter_button.dart';
 import 'package:cueline/ui/widgets/current_chapter_banner.dart';
 import 'package:cueline/ui/widgets/prompter_bottom_bar.dart';
 import 'package:cueline/ui/widgets/prompter_control_buttons_overlay.dart';
@@ -53,7 +56,11 @@ double _portraitBottomInset(BuildContext context, bool controlsVisible) {
 }
 
 class PrompterScreen extends ConsumerStatefulWidget {
-  const PrompterScreen({super.key});
+  /// Opens the floating window over other apps right away and starts
+  /// playing once it is up ("speak with other apps" on the home screen).
+  final bool startFloating;
+
+  const PrompterScreen({super.key, this.startFloating = false});
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() => _PrompterScreenState();
@@ -70,11 +77,21 @@ class _PrompterScreenState extends ConsumerState<PrompterScreen>
   /// the microphone, so it is captured here to close listening on exit.
   late final SpeechRecognitionService _speechService;
 
+  /// Android floating window that mirrors this prompter. Captured for
+  /// [dispose] like [_speechService].
+  late final FloatingPrompter _floating;
+  StreamSubscription<FloatingOverlayAction>? _floatingActions;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _speechService = ref.read(speechRecognitionServiceProvider);
+    _floating = ref.read(floatingPrompterProvider);
+    _floating.setPlaying(ref.read(prompterProvider).isPlaying);
+    if (_floating.isSupported) {
+      _floatingActions = _floating.actions.listen(_onFloatingAction);
+    }
     _scrollableTextController = ScrollableTextController();
     _scrollableTextControllerSaveDebouncer = PeriodicRunDebouncer(
       delay: Duration(seconds: 1),
@@ -105,6 +122,29 @@ class _PrompterScreenState extends ConsumerState<PrompterScreen>
     });
 
     _scrollableTextController.scrollController.addListener(_saveOnScroll);
+
+    if (widget.startFloating && _floating.isSupported) {
+      _floating.addListener(_playWhenFloating);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(startFloatingPrompter(context, _floating));
+      });
+    }
+  }
+
+  /// One-shot: the first time the window comes up, start playing so the
+  /// user can speak right away in the other app.
+  void _playWhenFloating() {
+    final status = _floating.status;
+    if (status == FloatingPrompterStatus.starting ||
+        status == FloatingPrompterStatus.permissionRequired ||
+        status == FloatingPrompterStatus.awaitingPermission) {
+      return;
+    }
+    _floating.removeListener(_playWhenFloating);
+    if (!mounted || status != FloatingPrompterStatus.active) return;
+    if (!ref.read(prompterProvider).isPlaying) {
+      ref.read(prompterProvider.notifier).togglePlayPause();
+    }
   }
 
   @override
@@ -119,6 +159,7 @@ class _PrompterScreenState extends ConsumerState<PrompterScreen>
     });
 
     ref.listen(prompterProvider.select((p) => p.isPlaying), (_, playing) {
+      _floating.setPlaying(playing);
       final speech = ref.read(speechRecognitionProvider.notifier);
       if (playing) {
         unawaited(
@@ -259,11 +300,20 @@ class _PrompterScreenState extends ConsumerState<PrompterScreen>
       case AppLifecycleState.inactive:
       case AppLifecycleState.hidden:
       case AppLifecycleState.paused:
+        // The floating window keeps the prompter in use while another app
+        // is in front. Its microphone service keeps speech running.
+        if (_floating.isActive) {
+          if (state != AppLifecycleState.inactive) {
+            unawaited(_floating.onAppHidden());
+          }
+          return;
+        }
         if (ref.read(speechRecognitionProvider).isActive) {
           _lifecyclePausedListening = true;
           unawaited(speech.pause());
         }
       case AppLifecycleState.resumed:
+        unawaited(_floating.onAppResumed());
         if (_lifecyclePausedListening) {
           _lifecyclePausedListening = false;
           if (ref.read(prompterProvider).isPlaying) {
@@ -271,13 +321,29 @@ class _PrompterScreenState extends ConsumerState<PrompterScreen>
           }
         }
       case AppLifecycleState.detached:
+        unawaited(_floating.close());
         unawaited(speech.stop());
+    }
+  }
+
+  void _onFloatingAction(FloatingOverlayAction action) {
+    if (!mounted) return;
+    switch (action) {
+      case FloatingOverlayAction.togglePlay:
+        ref.read(prompterProvider.notifier).togglePlayPause();
+      case FloatingOverlayAction.close:
+        // The native side already brings CueLine back to the front.
+        unawaited(_floating.close());
     }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _floating.removeListener(_playWhenFloating);
+    unawaited(_floatingActions?.cancel());
+    // The window follows this prompter's controller; it cannot outlive it.
+    unawaited(_floating.close());
     unawaited(_speechService.stop());
     SystemChrome.setPreferredOrientations([]);
     SystemChrome.setEnabledSystemUIMode(
